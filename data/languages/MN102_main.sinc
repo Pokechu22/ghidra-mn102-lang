@@ -353,13 +353,20 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 :CMP d1w,a2w is opcode2=0xF2 & opcode2x=0x2 & d1w & a2w { subflags(a2w, d1w); resultflags(a2w - d1w); }
 :CMP a1w,d2w is opcode2=0xF2 & opcode2x=0xE & a1w & d2w { subflags(d2w, a1w); resultflags(d2w - a1w); }
 :CMP a1w,a2w is opcode2=0xF2 & opcode2x=0x6 & a1w & a2w { subflags(a2w, a1w); resultflags(a2w - a1w); }
-:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 unimpl
-#:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 { subflags(d2, sext(imm8:1)); resultflags(d2 - sext(imm8:1)); }
-:CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 unimpl
-#:CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 { subflags(d2w, sext(imm16:2)); resultflags(d2w - sext(imm16:2)); }
+# Like the issue with subtract... except this exists _only_ for the flags...
+:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 {
+    #subflags(d2, sext(imm8:1));
+    resultflags(d2 - sext(imm8:1));
+}
+:CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 {
+    #subflags(d2w, sext(imm16:2));
+    resultflags(d2w - sext(imm16:2));
+}
 :CMP Imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=2 & d2w; Imm24 { subflags(d2w, Imm24); resultflags(d2w - Imm24); }
-:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 unimpl
-#:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 { subflags(a2, sext(imm16:2)); resultflags(a2 - sext(imm16:2));}
+:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 {
+    #subflags(a2, sext(imm16:2));
+    resultflags(a2 - sext(imm16:2));
+}
 :CMP Imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); resultflags(a2w - Imm24); }
 
 macro bitwise16resultflags(op) {
