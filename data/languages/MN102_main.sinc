@@ -246,18 +246,25 @@ macro resultflags(op) {
 :ADD d1w,a2w is opcode2=0xF2 & opcode2x=0x0 & d1w & a2w { addflags(d1w, a2w); a2w = d1w + a2w; resultflags(a2w); }
 :ADD a1w,d2w is opcode2=0xF2 & opcode2x=0xC & a1w & d2w { addflags(a1w, d2w); d2w = a1w + d2w; resultflags(d2w); }
 :ADD a1w,a2w is opcode2=0xF2 & opcode2x=0x4 & a1w & a2w { addflags(a1w, a2w); a2w = a1w + a2w; resultflags(a2w); }
-:ADD imm8,d2 is opcode1=0xD & e1 = 1 & d2; imm8 unimpl # D4-D7... broken
-:ADD imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w = 2 & d2w; imm16 unimpl
-:ADD imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 0 & d2w; imm24 unimpl
-:ADD imm8,a2 is opcode1=0xD & e1=0 & a2; imm8 unimpl # DC-DF
-:ADD imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w = 2 & a2w; imm16 unimpl
-:ADD imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 1 & a2w; imm24 unimpl
-#:ADD imm8,d2 is opcode1=0xD & e1 = 1 & d2; imm8 { addflags(sext(imm8), d2); d2 = sext(imm8) + d2; resultflags(d2); } # D4-D7... broken
-#:ADD imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w = 2 & d2w; imm16 { addflags(sext(imm16), d2w); d2w = sext(imm16) + d2w; resultflags(d2w); }
-#:ADD imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 0 & d2w; imm24 { addflags(imm24, d2w); d2w = sext(imm24) + d2w; resultflags(d2w); }
-#:ADD imm8,a2 is opcode1=0xD & e1=3 & d2; imm8 { addflags(sext(imm8), a2); a2 = sext(imm8) + a2; resultflags(a2); } # DC-DF
-#:ADD imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w = 2 & a2w; imm16 { addflags(sext(imm16), a2w); a2w = sext(imm16) + a2w; resultflags(a2w); }
-#:ADD imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 1 & a2w; imm24 { addflags(imm24, a2w); a2w = imm24 + a2w; resultflags(a2w); }
+# It seems like addflags doesn't work with immediate
+:ADD Imm8,d2 is opcode1=0xD & e1 = 1 & d2; Imm8 { # D4-D7
+    #addflags(sext(Imm8), d2);
+    d2 = sext(Imm8) + d2; resultflags(d2);
+}
+:ADD Imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w = 2 & d2w; Imm16 {
+    #addflags(sext(Imm16), d2w);
+    d2w = sext(Imm16) + d2w; resultflags(d2w);
+}
+:ADD Imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 0 & d2w; Imm24 { addflags(Imm24, d2w); d2w = sext(Imm24) + d2w; resultflags(d2w); }
+:ADD Imm8,a2 is opcode1=0xD & e1=0 & a2; Imm8 { # DC-DF
+    #addflags(sext(Imm8), a2);
+    a2 = sext(Imm8) + a2; resultflags(a2);
+}
+:ADD Imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w = 2 & a2w; Imm16 {
+    #addflags(sext(Imm16), a2w);
+    a2w = sext(Imm16) + a2w; resultflags(a2w);
+}
+:ADD Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 1 & a2w; Imm24 { addflags(Imm24, a2w); a2w = Imm24 + a2w; resultflags(a2w); }
 
 :ADDC d1w,d2w is opcode2=0xF2 & opcode2x=0x8 & d1w & d2w {
     #local old_cf = $(CF);
@@ -286,14 +293,17 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 :SUB d1w,a2w is opcode2=0xF2 & opcode2x=0x1 & d1w & a2w { subflags(a2w, d1w); a2w = a2w - d1w; resultflags(a2w); }
 :SUB a1w,d2w is opcode2=0xF2 & opcode2x=0xD & a1w & d2w { subflags(d2w, a1w); d2w = d2w - a1w; resultflags(d2w); }
 :SUB a1w,a2w is opcode2=0xF2 & opcode2x=0x5 & a1w & a2w { subflags(a2w, a1w); a2w = a2w - a1w; resultflags(a2w); }
-:SUB imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w=3 & d2w; imm16 unimpl
-:SUB imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w=2 & d2w; imm24 unimpl
-:SUB imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w=3 & a2w; imm16 unimpl
-:SUB imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; imm24 unimpl
-#:SUB imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w=3 & d2w; imm16 { subflags(d2w, sext(imm16)); d2w = d2w - sext(imm16); resultflags(d2w); }
-#:SUB imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w=2 & d2w; imm24 { subflags(d2w, imm24); d2w = d2w - imm24; resultflags(d2w); }
-#:SUB imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w=3 & a2w; imm16 { subflags(a2w, sext(imm16)); a2w = a2w - sext(imm16); resultflags(a2w); }
-#:SUB imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; imm24 { subflags(a2w, imm24); a2w = a2w - imm24; resultflags(a2w); }
+# Same as with add, subflags doesn't like immediate data
+:SUB Imm16,d2w is opcode2=0xF7 & opcode2x=0x1 & e1w=3 & d2w; Imm16 {
+    #subflags(d2w, sext(Imm16));
+    d2w = d2w - sext(Imm16); resultflags(d2w);
+}
+:SUB Imm24,d2w is opcode2=0xF4 & opcode2x=0x6 & e1w=2 & d2w; Imm24 { subflags(d2w, Imm24); d2w = d2w - Imm24; resultflags(d2w); }
+:SUB Imm16,a2w is opcode2=0xF7 & opcode2x=0x0 & e1w=3 & a2w; Imm16 {
+    #subflags(a2w, sext(Imm16));
+    a2w = a2w - sext(Imm16); resultflags(a2w);
+}
+:SUB Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); a2w = a2w - Imm24; resultflags(a2w); }
 
 :SUBC d1w,d2w is opcode2=0xF2 & opcode2x=0x9 & d1w & d2w {
     #local old_cf = $(CF);
@@ -349,12 +359,10 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 #:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 { subflags(d2, sext(imm8:1)); resultflags(d2 - sext(imm8:1)); }
 :CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 unimpl
 #:CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 { subflags(d2w, sext(imm16:2)); resultflags(d2w - sext(imm16:2)); }
-:CMP imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=2 & d2w; imm24 unimpl
-#:CMP imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=2 & d2w; imm24 { subflags(d2w, imm24); resultflags(d2w - imm24); }
+:CMP Imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=2 & d2w; Imm24 { subflags(d2w, Imm24); resultflags(d2w - Imm24); }
 :CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 unimpl
 #:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 { subflags(a2, sext(imm16:2)); resultflags(a2 - sext(imm16:2));}
-:CMP imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=3 & a2w; imm24 unimpl
-#:CMP imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=3 & a2w; imm24 { subflags(a2w, imm24); resultflags(a2w, imm24); }
+:CMP Imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); resultflags(a2w - Imm24); }
 
 macro bitwise16resultflags(op) {
     $(VF) = 0;
@@ -364,12 +372,10 @@ macro bitwise16resultflags(op) {
 }
 
 :AND d1w,d2w is opcode2=0xF3 & opcode2x=0x0 & d1w & d2w { d2w = d2w & (d1w | 0xFF0000); bitwise16resultflags(d2w); }
-#:AND imm8,d2w is opcode2=0xF5 & opcode2x=0x0 & e1w=0 & d2w; imm8 unimpl
 :AND imm8,d2w is opcode2=0xF5 & opcode2x=0x0 & e1w=0 & d2w; imm8 { d2w = (d2w & imm8) | (d2w & 0xFF0000); bitwise16resultflags(d2w); }
-#:AND imm8,d2w is opcode2=0xF5 & opcode2x=0x0 & e1w=0 & d2w; imm8 { d2w = d2w & (imm8 | 0xFF0000); bitwise16resultflags(d2w); }
-#:AND imm16,d2w is opcode2=0xF7 & opcode2x=0x0 & e1w=0 & d2w; imm16 unimpl
+#:AND imm8,d2w is opcode2=0xF5 & opcode2x=0x0 & e1w=0 & d2w; imm8 { d2w = d2w & (imm8 | 0xFF0000); bitwise16resultflags(d2w); } # equivalent to above, but cleaner if it worked
 :AND imm16,d2w is opcode2=0xF7 & opcode2x=0x0 & e1w=0 & d2w; imm16 { d2w = (d2w & imm16) | (d2w & 0xFF0000); bitwise16resultflags(d2w); }
-#:AND imm16,d2w is opcode2=0xF7 & opcode2x=0x0 & e1w=0 & d2w; imm16 { d2w = d2w & (imm16 | 0xFF0000); bitwise16resultflags(d2w); }
+#:AND imm16,d2w is opcode2=0xF7 & opcode2x=0x0 & e1w=0 & d2w; imm16 { d2w = d2w & (imm16 | 0xFF0000); bitwise16resultflags(d2w); } # equivalent to above, but cleaner if it worked
 :AND imm16,"PSW" is opcode2=0xF7 & opcode2x=0x1 & e1w=0 & e2w=0; imm16 { PSW = PSW & imm16; }
 
 :OR d1w,d2w is opcode2=0xF3 & opcode2x=0x1 & d1w & d2w { d2w = d2w | (d1w & 0x00FFFF); bitwise16resultflags(d2w); }
