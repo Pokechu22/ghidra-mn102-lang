@@ -504,3 +504,14 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
     A3 = A3 + 6;
     return [addr];
 }
+
+# Unknown instructions, based on the number of bytes that each prefix implies according to the manual
+:UNK_F0 imm8 is fullopcode1=0xF0; imm8 unimpl # 2 bytes
+:UNK_F1 imm8 is fullopcode1=0xF1; imm8 unimpl # 2 bytes
+:UNK_F2 imm8 is fullopcode1=0xF2; imm8 unimpl # 2 bytes
+:UNK_F3 imm8 is fullopcode1=0xF3; imm8 unimpl # 2 bytes
+:UNK_F4 imm8 imm24 is fullopcode1=0xF4; imm8; imm24 unimpl # 5 bytes
+:UNK_F5 imm8 delta8 is fullopcode1=0xF5; imm8; delta8 unimpl # 3 bytes
+:UNK_F7 imm8 imm16 is fullopcode1=0xF7; imm8; imm16 unimpl # 4 bytes
+
+:BREAK is fullopcode1=0xFF unimpl # GDB extension
