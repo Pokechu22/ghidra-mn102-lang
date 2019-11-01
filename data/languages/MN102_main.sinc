@@ -61,20 +61,53 @@ define register offset=29 size=2 [ PSW ];
 # 				S1=PSW[13,1]; # Software bit 1
 
 # so instead use this hack found in the 8051_main file...
-@define ZF "PSW[0,1]"   # Zero flag
-@define NF "PSW[1,1]"   # Negative flag
-@define CF "PSW[2,1]"   # Carry flag - 16 bit!
-@define VF "PSW[3,1]"   # Overflow flag - 16 bit!
-@define ZX "PSW[4,1]"   # Extended zero flag
-@define NX "PSW[5,1]"   # Extended negative flag
-@define CX "PSW[6,1]"   # Extended carry flag
-@define VX "PSW[7,1]"   # Extended overflow flag
-@define IM0 "PSW[8,1]"  # Interrupt mask 0
-@define IM1 "PSW[9,1]"  # Interrupt mask 1
-@define IM2 "PSW[10,1]" # Interrupt mask 2
-@define IE "PSW[11,1]"  # Interrupt enable
-@define S0 "PSW[12,1]"  # Software bit 0
-@define S1 "PSW[13,1]"  # Software bit 1
+#@define ZF "PSW[0,1]"   # Zero flag
+#@define NF "PSW[1,1]"   # Negative flag
+#@define CF "PSW[2,1]"   # Carry flag - 16 bit!
+#@define VF "PSW[3,1]"   # Overflow flag - 16 bit!
+#@define ZX "PSW[4,1]"   # Extended zero flag
+#@define NX "PSW[5,1]"   # Extended negative flag
+#@define CX "PSW[6,1]"   # Extended carry flag
+#@define VX "PSW[7,1]"   # Extended overflow flag
+#@define IM0 "PSW[8,1]"  # Interrupt mask 0
+#@define IM1 "PSW[9,1]"  # Interrupt mask 1
+#@define IM2 "PSW[10,1]" # Interrupt mask 2
+#@define IE "PSW[11,1]"  # Interrupt enable
+#@define S0 "PSW[12,1]"  # Software bit 0
+#@define S1 "PSW[13,1]"  # Software bit 1
+
+# Hack further
+define register offset=32 size=1 [ PSW_ZF PSW_NF PSW_CF PSW_VF PSW_ZX PSW_NX PSW_CX PSW_VX IM0 IM1 IM2 IE S0 S1 ];
+@define ZF  "PSW_ZF"
+@define NF  "PSW_NF"
+@define CF  "PSW_CF"
+@define VF  "PSW_VF"
+@define ZX  "PSW_ZX"
+@define NX  "PSW_NX"
+@define CX  "PSW_CX"
+@define VX  "PSW_VX"
+@define IM0 "PSW_IM0"
+@define IM1 "PSW_IM1"
+@define IM2 "PSW_IM2"
+@define IE  "PSW_IE"
+@define S0  "PSW_S0"
+@define S1  "PSW_S1"
+
+#define register offset=32 size=2 [pswcopy];
+#@define ZF "pswcopy[0,1]"   # Zero flag
+#@define NF "pswcopy[1,1]"   # Negative flag
+#@define CF "pswcopy[2,1]"   # Carry flag - 16 bit!
+#@define VF "pswcopy[3,1]"   # Overflow flag - 16 bit!
+#@define ZX "pswcopy[4,1]"   # Extended zero flag
+#@define NX "pswcopy[5,1]"   # Extended negative flag
+#@define CX "pswcopy[6,1]"   # Extended carry flag
+#@define VX "pswcopy[7,1]"   # Extended overflow flag
+#@define IM0 "pswcopy[8,1]"  # Interrupt mask 0
+#@define IM1 "pswcopy[9,1]"  # Interrupt mask 1
+#@define IM2 "pswcopy[10,1]" # Interrupt mask 2
+#@define IE "pswcopy[11,1]"  # Interrupt enable
+#@define S0 "pswcopy[12,1]"  # Software bit 0
+#@define S1 "pswcopy[13,1]"  # Software bit 1
 
 #TOKENS - page 6
 # There are 7 formats; 1-3 uses 1 opcode byte w/ registers and some other data
@@ -236,10 +269,10 @@ macro addflags(op1, op2) {   # Flags set by add instructions
 }
 
 macro resultflags(op) {
-    $(NX) = (op:3 + op:3 s< 0);
-    $(ZX) = (op:3 + op:3 == 0);
-    $(NF) = (op:2 + op:2 s< 0);
-    $(ZF) = (op:2 + op:2 == 0);
+    $(NX) = (op:3 s< 0);
+    $(ZX) = (op:3 == 0);
+    $(NF) = (op:2 s< 0);
+    $(ZF) = (op:2 == 0);
 }
 
 :ADD d1,d2 is opcode1=0x9 & d1 & d2 { addflags(d1, d2); d2 = d1 + d2; resultflags(d2); }
@@ -355,17 +388,35 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 :CMP a1w,a2w is opcode2=0xF2 & opcode2x=0x6 & a1w & a2w { subflags(a2w, a1w); resultflags(a2w - a1w); }
 # Like the issue with subtract... except this exists _only_ for the flags...
 :CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 {
-    #subflags(d2, sext(imm8:1));
-    resultflags(d2 - sext(imm8:1));
+    $(CX) = (d2 < sext(imm8:1));
+    $(VX) = (sborrow(d2, sext(imm8:1)));
+    $(CF) = (d2:2 < sext(imm8:1));
+    $(VF) = (sborrow(d2:2, sext(imm8:1)));
+    $(NX) = (d2 s< sext(imm8:1));
+    $(ZX) = (d2 == sext(imm8:1));
+    $(NF) = (d2:2 s< sext(imm8:1));
+    $(ZF) = (d2:2 == sext(imm8:1));
 }
 :CMP imm16,d2w is opcode2=0xF7 & opcode2x=0x4 & e1w=2 & d2w; imm16 {
-    #subflags(d2w, sext(imm16:2));
-    resultflags(d2w - sext(imm16:2));
+    $(CX) = (d2w < sext(imm16:2));
+    $(VX) = (sborrow(d2w, sext(imm16:2)));
+    $(CF) = (d2w:2 < imm16);
+    $(VF) = (sborrow(d2w:2, imm16));
+    $(NX) = (d2w s< sext(imm16:2));
+    $(ZX) = (d2w == sext(imm16:2));
+    $(NF) = (d2w:2 s< imm16);
+    $(ZF) = (d2w:2 == imm16);
 }
 :CMP Imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=2 & d2w; Imm24 { subflags(d2w, Imm24); resultflags(d2w - Imm24); }
 :CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 {
-    #subflags(a2, sext(imm16:2));
-    resultflags(a2 - sext(imm16:2));
+    $(CX) = (a2 < sext(imm16:2));
+    $(VX) = (sborrow(a2, sext(imm16:2)));
+    $(CF) = (a2 < imm16);
+    $(VF) = (sborrow(a2, imm16));
+    $(NX) = (a2 s< sext(imm16:2));
+    $(ZX) = (a2 == sext(imm16:2));
+    $(NF) = (a2:2 s< imm16);
+    $(ZF) = (a2:2 == imm16);
 }
 :CMP Imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); resultflags(a2w - Imm24); }
 
