@@ -86,6 +86,7 @@ define token format1 (8)
    e1          = (2,3)
    a1          = (2,3)
    d1          = (2,3)
+   e2          = (0,1)
    a2          = (0,1)
    d2          = (0,1);
 
@@ -115,11 +116,17 @@ define token immtoken24(24)
     delta24 = (0,23) signed hex;
 
 # Not exactly happy about this, since it's not needed for the deltas...
-#Abs16: abs16 is abs16 { export *[const]:2 abs16; }
-#Abs24: abs24 is abs24 { export *[const]:3 abs24; }
-#Imm8:  imm8  is imm8  { export *[const]:1 imm8;  }
-#Imm16: imm16 is imm16 { export *[const]:2 imm16; }
-#Imm24: imm24 is imm24 { export *[const]:3 imm24; }
+Imm8:  imm8  is imm8  { export *[const]:1 imm8;  }
+Imm16: imm16 is imm16 { export *[const]:2 imm16; }
+Imm24: imm24 is imm24 { export *[const]:3 imm24; }
+
+# OK, these really shouldn't be needed; why does inlining them give "Could not resolve at least 1 variable size"?
+Addr16_1: abs16 is abs16 { export *:1 abs16; }
+Addr24_1: abs24 is abs24 { export *:1 abs24; }
+Addr16_2: abs16 is abs16 { export *:2 abs16; }
+Addr24_2: abs24 is abs24 { export *:2 abs24; }
+Addr16_3: abs16 is abs16 { export *:3 abs16; }
+Addr24_3: abs24 is abs24 { export *:3 abs24; }
 
 attach variables [ a1 a2 a1w a2w ] [ A0 A1 A2 A3 ];
 attach variables [ d1 d2 d1w d2w ] [ D0 D1 D2 D3 ];
@@ -144,52 +151,39 @@ define pcodeop broken_constant;
 :MOV (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0xC & a1w & d2w; delta16 { d2w = sext(*:2 (a1w + delta16)); }
 :MOV (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x8 & a1w & d2w; delta24 { d2w = sext(*:2 (a1w + delta24)); }
 :MOV (d0w,a1w),d2w is opcode2=0xF1 & opcode2x=0x4 & d0w & a1w & d2w { d2w = sext(*:2 (a1w + d0w)); } # TODO - opcode2 and d0w overlap, right?
-# These fail to compile:
-:MOV (abs16),d2 is opcode1=0xC & e1=2 & d2; abs16 unimpl
-# :MOV (abs16),d2 is opcode1=0xC & e1=2 & d2; abs16 { d2 = sext(*:2 abs16); } # C8-CB
-:MOV (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w = 0 & d2w; abs24 unimpl
-# :MOV (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w = 0 & d2w; abs24 { d2w = sext(*:2 abs24); }
+:MOV (Addr16_2),d2 is opcode1=0xC & e1=2 & d2; Addr16_2 { d2 = sext(Addr16_2); } # C8-CB
+:MOV (Addr24_2),d2w is opcode2=0xF4 & opcode2x=0xC & e1w = 0 & d2w; Addr24_2 { d2w = sext(Addr24_2); }
 :MOV (a1),a2 is opcode1=7 & a1 & a2; delta8=0 { a2 = *:3 a1; } # Special case of the following
 :MOV (delta8,a1),a2 is opcode1=7 & a1 & a2; delta8 { a2 = *:3 (a1 + delta8); }
 :MOV (delta16,a1w),a2w is opcode2=0xF7 & opcode2x=0xB & a1w & a2w; delta16 { a2w = *:3 (a1w + delta16); }
 :MOV (delta24,a1w),a2w is opcode2=0xF4 & opcode2x=0xF & a1w & a2w; delta24 { a2w = *:3 (a1w + delta24); }
-# I think it just doesn't like absolute addresses?
-:MOV (abs16),a2w is opcode2=0xF7 & opcode2x=0x3 & e1w=0 & a2w; abs16 { a2w = broken_abs_read(); }
-#:MOV (abs16),a2w is opcode2=0xF7 & opcode2x=0x3 & e1w=0 & a2w; abs16 { a2w = *:3 abs16; }
-:MOV (abs24),a2w is opcode2=0xF4 & opcode2x=0xD & e1w=0 & a2w; abs24 { a2w = broken_abs_read(); }
-#:MOV (abs24),a2w is opcode2=0xF4 & opcode2x=0xD & e1w=0 & a2w; abs24 { a2w = *:3 abs24; }
+:MOV (Addr16_3),a2w is opcode2=0xF7 & opcode2x=0x3 & e1w=0 & a2w; Addr16_3 { a2w = Addr16_3; }
+:MOV (Addr24_3),a2w is opcode2=0xF4 & opcode2x=0xD & e1w=0 & a2w; Addr24_3 { a2w = Addr24_3; }
 
 :MOV d2,(a1) is opcode1=0 & a1 & d2 { *:2 a1 = d2:2; }
 :MOV d2,(delta8,a1) is opcode1=4 & a1 & d2; delta8 { *:2 (a1 + delta8) = d2:2; }
 :MOV d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x8 & a1w & d2w; delta16 { *:2 (a1w + delta16) = d2w:2; }
 :MOV d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x0 & a1w & d2w; delta24 { *:2 (a1w + delta24) = d2w:2; }
 :MOV d2w,(d0w,a1w) is opcode2=0xF1 & opcode2x=0xC & d0w & a1w & d2w { *:2 (a1w + d0w) = d2w:2; } # TODO - opcode2 and d0w overlap?
-# Also broken :|
-:MOV d2,(abs16) is opcode1=0xC & e1=0 & d2; abs16 unimpl
-#:MOV d2,(abs16) is opcode1=0xC & e1=0 & d2; abs16 { *:2 (abs16) = d2:2; }
-:MOV d2w,(abs24) is opcode2=0xF4 & opcode2x=0x4 & e1w=0 & d2w; abs24 unimpl
-#:MOV d2w,(abs24) is opcode2=0xF4 & opcode2x=0x4 & e1w=0 & d2w; abs24 { *:2 (abs24) = d2w:2; }
+:MOV d2,(Addr16_2) is opcode1=0xC & e1=0 & d2; Addr16_2 { Addr16_2 = d2:2; }
+:MOV d2w,(Addr24_2) is opcode2=0xF4 & opcode2x=0x4 & e1w=0 & d2w; Addr24_2 { Addr24_2 = d2w:2; }
 :MOV a2,(a1) is opcode1=5 & a1 & a2; delta8=0 { *:3 a1 = a2; } # Special case of the following
 :MOV a2,(delta8,a1) is opcode1=5 & a1 & a2; delta8 { *:3 (a1+delta8) = a2; }
 :MOV a2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0xA & a1w & a2w; delta16 { *:3 (a1w+delta16) = a2w; }
 :MOV a2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x1 & a1w & a2w; delta24 { *:3 (a1w+delta24) = a2w; }
-# Yep, broken
-:MOV a2w,(abs16) is opcode2=0xF7 & opcode2x=0x2 & e1w=0 & a2w; abs16 unimpl
-#:MOV a2w,(abs16) is opcode2=0xF7 & opcode2x=0x2 & e1w=0 & a2w; abs16 { *:3 abs16 = a2w; }
-:MOV a2w,(abs24) is opcode2=0xF4 & opcode2x=0x5 & e1w=0 & a2w; abs24 unimpl
-#:MOV a2w,(abs24) is opcode2=0xF4 & opcode2x=0x5 & e1w=0 & a2w; abs24 { *:3 abs24 = a2w; }
+:MOV a2w,(Addr16_3) is opcode2=0xF7 & opcode2x=0x2 & e1w=0 & a2w; Addr16_3 { Addr16_3 = a2w; }
+:MOV a2w,(Addr24_3) is opcode2=0xF4 & opcode2x=0x5 & e1w=0 & a2w; Addr24_3 { Addr24_3 = a2w; }
 
-# BROKEN.  Geeze.
-# :MOV imm8,d2 is opcode1=8 & d2 & d1=d2; imm8 { d2 = broken_constant(); }
-# :MOV imm8,d2 is opcode1=8 & d2 & d1=d2; imm8 { d2 = sext(imm8); } # Replaces d2 = d1 when same registers
-:MOV imm16,d2w is opcode2=0xF8 & opcode2x=0xD & e1w=0 & d2w; imm16 unimpl
-# :MOV imm16,d2w is opcode2=0xF8 & opcode2x=0xD & e1w=0 & d2w; imm16 { d2w = sext(imm16); }
-:MOV imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=0 & d2w; imm24 unimpl
-# :MOV imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=0 & d2w; imm24 { d2w = imm24; }
-:MOV imm16,a2 is opcode1=0xD & e1=3 & a2; imm16 unimpl # DC-DF
-# :MOV imm16,a2 is opcode1=0xD & e1=3 & a2; imm16 { a2 = zext(imm16); } # DC-DF
-:MOV imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=1 & a2w; imm24 unimpl
-# :MOV imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=1 & a2w; imm24 { a2w = imm24; }
+# For some reason, this doesn't work, but a similar thing (clr) is shown in the example
+:MOV Imm8,"D0" is opcode1=8 & e1=0 & e2=0; Imm8 { D0 = sext(Imm8); }
+:MOV Imm8,"D1" is opcode1=8 & e1=1 & e2=1; Imm8 { D1 = sext(Imm8); }
+:MOV Imm8,"D2" is opcode1=8 & e1=2 & e2=2; Imm8 { D2 = sext(Imm8); }
+:MOV Imm8,"D3" is opcode1=8 & e1=3 & e2=3; Imm8 { D3 = sext(Imm8); }
+#:MOV Imm8,d2 is opcode1=8 & d2 & d1=d2; Imm8 { d2 = sext(Imm8); } # Replaces d2 = d1 when same registers
+:MOV Imm16,d2w is opcode2=0xF8 & opcode2x=0xD & e1w=0 & d2w; Imm16 { d2w = sext(Imm16); }
+:MOV Imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=0 & d2w; Imm24 { d2w = Imm24; }
+:MOV Imm16,a2 is opcode1=0xD & e1=3 & a2; Imm16 { a2 = zext(Imm16); } # DC-DF
+:MOV Imm24,a2w is opcode2=0xF4 & opcode2x=0x7 & e1w=1 & a2w; Imm24 { a2w = Imm24; }
 
 :MOVX (delta8,a1w),d2w is opcode2=0xF5 & opcode2x=0x7 & a1w & d2w; delta8 { d2w = *:3 (a1w + delta8); }
 :MOVX (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0x7 & a1w & d2w; delta16 { d2w = *:3 (a1w + delta16); }
@@ -204,28 +198,23 @@ define pcodeop broken_constant;
 :MOVB (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0xA & a1w & d2w; delta24 { d2w = sext(*:1 (a1w + delta24)); }
 :MOVB (d0w,a1w),d2w is opcode2=0xF0 & opcode2x=0x4 & d0w & a1w & d2w { d2w = sext(*:1 (a1w + d0w)); } # TODO - opcode2 and d0w overlap?
 # MOVB (abs16),d2w is fake
-:MOVB (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=1 & d2w; abs24 unimpl
-#:MOVB (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=1 & d2w; abs24 { d2w = sext(*:1 abs24); }
+:MOVB (Addr24_1),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=1 & d2w; Addr24_1 { d2w = sext(Addr24_1); }
 
 :MOVB d1,(a2) is opcode1=1 & d1 & a2 { *:1 a2 = d1:1; }
 :MOVB d2w,(delta8,a1w) is opcode2=0xF5 & opcode2x=0x1 & a1w & d2w; delta8 { *:1 (a1w + delta8) = d2w:1; }
 :MOVB d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x9 & a1w & d2w; delta16 { *:1 (a1w + delta16) = d2w:1; }
 :MOVB d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x2 & a1w & d2w; delta24 { *:1 (a1w + delta24) = d2w:1; }
 :MOVB d2w,(d0w,a1w) is opcode2=0xF0 & opcode2x=0xC & d0w & a1w & d2w { *:1 (a1w + d0w) = d2w:1; } # TODO - opcode2 and d0w overlap?
-:MOVB d2,(abs16) is opcode1=0xC & e1=1 & d2; abs16 unimpl
-#:MOVB d2,(abs16) is opcode1=0xC & e1=1 & d2; abs16 { *:1 abs16 = d2:1; }
-:MOVB d2w,(abs24) is opcode2=0xF4 & opcode2x=0x4 & e1w=1 & d2w; abs24 unimpl
-#:MOVB d2w,(abs24) is opcode2=0xF4 & opcode2x=0x4 & e1w=1 & d2w; abs24 { *:1 abs24 = d2w:1; }
+:MOVB d2,(Addr16_1) is opcode1=0xC & e1=1 & d2; Addr16_1 { Addr16_1 = d2:1; }
+:MOVB d2w,(Addr24_1) is opcode2=0xF4 & opcode2x=0x4 & e1w=1 & d2w; Addr24_1 { Addr24_1 = d2w:1; }
 
 :MOVBU (a1),d2 is opcode1=3 & a1 & d2 { d2 = zext(*:1 a1); }
 :MOVBU (delta8,a1w),d2w is opcode2=0xF5 & opcode2x=0x3 & a1w & d2w; delta8 { d2w = zext(*:1 (a1w + delta8)); }
 :MOVBU (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0x5 & a1w & d2w; delta16 { d2w = zext(*:1 (a1w + delta16)); }
 :MOVBU (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x9 & a1w & d2w; delta24 { d2w = zext(*:1 (a1w + delta24)); }
 :MOVBU (d0w,a1w),d2w is opcode2=0xF0 & opcode2x=0x8 & d0w & a1w & d2w { d2w = zext(*:1 (a1w + d0w)); }
-:MOVBU (abs16),d2 is opcode1=0xC & e1=3 & d2; abs16 unimpl # CC-CF
-# :MOVBU (abs16),d2 is opcode1=0xC & e1=3 & d2; abs16 { d2 = zext(*:1 abs16); } # CC-CF
-:MOVBU (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=2 & d2w; abs24 unimpl
-#:MOVBU (abs24),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=2 & d2w; abs24 { d2w = zext(*:1 abs24); }
+:MOVBU (Addr16_1),d2 is opcode1=0xC & e1=3 & d2; Addr16_1 { d2 = zext(Addr16_1); } # CC-CF
+:MOVBU (Addr24_1),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=2 & d2w; Addr24_1 { d2w = zext(Addr24_1); }
 
 # Does a 32-bit sign extension of a 16-bit value... which is a bit odd
 :EXT d1w is opcode2=0xF3 & opcode2x=0xC & d1w & e2w=1 {
