@@ -267,15 +267,12 @@ macro resultflags(op) {
 :ADD Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w = 1 & a2w; Imm24 { addflags(Imm24, a2w); a2w = Imm24 + a2w; resultflags(a2w); }
 
 :ADDC d1w,d2w is opcode2=0xF2 & opcode2x=0x8 & d1w & d2w {
-    #local old_cf = $(CF);
-    # TODO - this is completely broken
-    addflags(d1w, d2w);
-    #$(CX) = ( carry(d1w:3, d2w:3)) | ( carry(d1w:3, d2w:3 + old_cf));
-    #$(VX) = (scarry(d1w:3, d2w:3)) | (scarry(d1w:3, d2w:3 + old_cf));
-    #$(VF) = (scarry(d1w:2, d2w:2)) | (scarry(d1w:2, d2w:2 + old_cf));
-    #$(CF) = ( carry(d1w:2, d2w:2)) | ( carry(d1w:2, d2w:2 + old_cf));
-    #d2w = d1w + d2w + old_cf;
-    d2w = d1w + d2w;
+    local old_cf:3 = zext($(CF));
+    $(CX) = ( carry(d1w:3, d2w:3)) | ( carry(d1w:3 + d2w:3, old_cf));
+    $(VX) = (scarry(d1w:3, d2w:3)) | (scarry(d1w:3 + d2w:3, old_cf));
+    $(VF) = (scarry(d1w:2, d2w:2)) | (scarry(d1w:2 + d2w:2, old_cf:2));
+    $(CF) = ( carry(d1w:2, d2w:2)) | ( carry(d1w:2 + d2w:2, old_cf:2));
+    d2w = d1w + d2w + old_cf;
     resultflags(d2w);
 }
 
@@ -306,11 +303,12 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 :SUB Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); a2w = a2w - Imm24; resultflags(a2w); }
 
 :SUBC d1w,d2w is opcode2=0xF2 & opcode2x=0x9 & d1w & d2w {
-    #local old_cf = $(CF);
-    # TODO - this is completely broken
-    subflags(d1w, d2w);
-    #d2w = d1w - d2w - old_cf;
-    d2w = d1w - d2w;
+    local old_cf:3 = zext($(CF));
+    $(CX) = (d2w:3 < d1w:3) | (d2w:3 - d1w:3 < old_cf);
+    $(VX) = (sborrow(d2w:3, d1w:3)) | (sborrow(d2w:3 - d1w:3, old_cf));
+    $(CX) = (d2w:2 < d1w:2) | (d2w:2 - d1w:2 < old_cf:2);
+    $(VX) = (sborrow(d2w:2, d1w:2)) | (sborrow(d2w:2 - d1w:2, old_cf:2));
+    d2w = d1w - d2w - old_cf;
     resultflags(d2w);
 }
 
