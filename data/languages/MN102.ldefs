@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- For endianness, on p.20 (sec 2-1 data registers), it is stated that
+"When 8-bit data is loaded, it will be sign-extended or zero-extended to 24 bits"
+which I interpret as meaning little-endian.
+
+... it's explicitly stated on p. 34 (6-1) -->
+<language_definitions>
+  <language processor="MN102"
+            endian="little"
+            size="24"
+            variant="default"
+            version="1.0"
+            slafile="MN102.sla"
+            processorspec="MN102.pspec"
+            manualindexfile="../manuals/MN102.idx"
+            id="MN102:BE:24:default">
+    <description>MN102 Microcontroller Family</description>
+    <compiler name="default" spec="MN102.cspec" id="default"/>
+  </language>
+</language_definitions>

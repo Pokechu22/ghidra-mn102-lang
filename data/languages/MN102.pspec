@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<processor_spec>
+
+  <programcounter register="PC"/>
+  <!--
+  <volatile outputop="write_volatile" inputop="read_volatile">
+    <range space="SFR" first="0x0" last="0xFF"/>
+  </volatile>
+  
+  <default_symbols>
+    <symbol name="BANK0_R0" address="INTMEM:00"/>
+    <symbol name="BANK0_R1" address="INTMEM:01"/>
+    <symbol name="BANK0_R2" address="INTMEM:02"/>
+    <symbol name="BANK0_R3" address="INTMEM:03"/>
+    <symbol name="BANK0_R4" address="INTMEM:04"/>
+    <symbol name="BANK0_R5" address="INTMEM:05"/>
+    <symbol name="BANK0_R6" address="INTMEM:06"/>
+    <symbol name="BANK0_R7" address="INTMEM:07"/>
+  </default_symbols>
+  
+  <default_memory_blocks>
+    <memory_block name="INTMEM" start_address="INTMEM:20" length="0xe0" initialized="false"/>
+    <memory_block name="BITS" start_address="BITS:00" bit_mapped_address="INTMEM:20" length="0x80"/>
+  </default_memory_blocks>
+  -->
+  
+</processor_spec>

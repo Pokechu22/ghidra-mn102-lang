@@ -1,0 +1,512 @@
+# sleigh specification file for Matsushita MN102
+
+#@define BIT_OPS "PCODEOPS"
+#@define BIT_OPS "SHIFTS" 
+@define BIT_OPS "BIT_ADDRS"
+
+# It's sometimes clearer for decompilation to omit the pushing and
+# restoring of the return value for function calls.
+#@define OMIT_RETADDR
+
+# TODO !!! need to fully employ resultflags macro after resolving the use of the above BIT_OPS !!!
+# TODO !!! Need to fill-out SFR bits in 80251.pspec !!!
+
+@if defined(ENDIAN)
+define endian=$(ENDIAN);
+@else
+define endian=little;
+@endif
+
+define alignment=1;
+
+@define PTRSIZE 3
+@define SP_SIZE 3
+
+define space ram     type=ram_space      size=3  default;
+
+# MN102 spaces map to the following regions of the address space:
+# http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.7.4
+#   cpu ram  - 0x008000-0x009000 (4kb)
+#   main rom - 0x080000-0x0a0000 (128kb), mirrored
+#   ext ram  - 0x400000-0x4XXXXX (controller ram)
+
+define space register type=register_space size=1;
+
+# P.19 or section 2
+# Data registers
+define register offset=0 size=3 [ D0 D1 D2 D3 ];
+# Address registers
+define register offset=12 size=3 [ A0 A1 A2 A3 ];
+# Program counter
+define register offset=24 size=3 [ PC ];
+# Multiply/divide register
+define register offset=27 size=2 [ MDR ];
+# Processor status word
+define register offset=29 size=2 [ PSW ];
+
+# These seem to cause issues, not only in code but also with https://github.com/NationalSecurityAgency/ghidra/issues/1144
+# define bitrange ZF=PSW[0,1]   # Zero flag
+# 				NF=PSW[1,1]   # Negative flag
+# 				CF=PSW[2,1]   # Carry flag - 16 bit!
+# 				VF=PSW[3,1]   # Overflow flag - 16 bit!
+# 				ZX=PSW[4,1]   # Extended zero flag
+# 				NX=PSW[5,1]   # Extended negative flag
+# 				CX=PSW[6,1]   # Extended carry flag
+# 				VX=PSW[7,1]   # Extended overflow flag
+# 				IM0=PSW[8,1]  # Interrupt mask 0
+# 				IM1=PSW[9,1]  # Interrupt mask 1
+# 				IM2=PSW[10,1] # Interrupt mask 2
+# 				IE=PSW[11,1]  # Interrupt enable
+# 				S0=PSW[12,1]  # Software bit 0
+# 				S1=PSW[13,1]; # Software bit 1
+
+# so instead use this hack found in the 8051_main file...
+@define ZF "PSW[0,1]"   # Zero flag
+@define NF "PSW[1,1]"   # Negative flag
+@define CF "PSW[2,1]"   # Carry flag - 16 bit!
+@define VF "PSW[3,1]"   # Overflow flag - 16 bit!
+@define ZX "PSW[4,1]"   # Extended zero flag
+@define NX "PSW[5,1]"   # Extended negative flag
+@define CX "PSW[6,1]"   # Extended carry flag
+@define VX "PSW[7,1]"   # Extended overflow flag
+@define IM0 "PSW[8,1]"  # Interrupt mask 0
+@define IM1 "PSW[9,1]"  # Interrupt mask 1
+@define IM2 "PSW[10,1]" # Interrupt mask 2
+@define IE "PSW[11,1]"  # Interrupt enable
+@define S0 "PSW[12,1]"  # Software bit 0
+@define S1 "PSW[13,1]"  # Software bit 1
+
+#TOKENS - page 6
+# There are 7 formats; 1-3 uses 1 opcode byte w/ registers and some other data
+# in later bytes while 4-7 use 2 opcode bytes with other data.
+
+define token format1 (8)
+   opcode1     = (4,7)
+   fullopcode1 = (0,7)
+   e1          = (2,3)
+   a1          = (2,3)
+   d1          = (2,3)
+   a2          = (0,1)
+   d2          = (0,1);
+
+define token format2 (16)
+   opcode2     = (4,15)
+   fullopcode2 = (0,15)
+   e1w         = (2,3)
+   a1w         = (2,3)
+   d1w         = (2,3)
+   e2w         = (0,1)
+   a2w         = (0,1)
+   d2w         = (0,1)
+   d0w         = (4,5);
+
+# n.b. the manual uses d8/d16/d24, but that gets confusing with d1/d2
+define token immtoken8(8)
+    imm8 = (0,7) hex
+    delta8 = (0,7) signed hex;
+define token immtoken16(16)
+    imm16 = (0,15) hex
+    abs16 = (0,15) hex
+    delta16 = (0,15) signed hex;
+define token immtoken24(24)
+    imm24 = (0,23) hex
+    abs24 = (0,23) hex
+    delta24 = (0,23) signed hex;
+
+# Not exactly happy about this, since it's not needed for the deltas...
+#Abs16: abs16 is abs16 { export *[const]:2 abs16; }
+#Abs24: abs24 is abs24 { export *[const]:3 abs24; }
+#Imm8:  imm8  is imm8  { export *[const]:1 imm8;  }
+#Imm16: imm16 is imm16 { export *[const]:2 imm16; }
+#Imm24: imm24 is imm24 { export *[const]:3 imm24; }
+
+attach variables [ a1 a2 a1w a2w ] [ A0 A1 A2 A3 ];
+attach variables [ d1 d2 d1w d2w ] [ D0 D1 D2 D3 ];
+
+define pcodeop broken_abs_read;
+define pcodeop broken_abs_write;
+define pcodeop broken_constant;
+
+# In order of pages in the manual
+:MOV d1w,a2w is opcode2=0xF23 & d1w & a2w { a2w = d1w; }
+:MOV a1w,d2w is opcode2=0xF2F & a1w & d2w { d2w = a1w; }
+:MOV d1,d2 is opcode1=8 & d1 & d2 { d2 = d1; } # Note: d2 != d1, but that won't matter yet
+:MOV a1w,a2w is opcode2=0xF27 & a1w & a2w { a2w = a1w; }
+:MOV "PSW",d2w is opcode2=0xF3F & e1w=0 & d2w { d2w = zext(PSW); }
+:MOV d1w,"PSW" is opcode2=0xF3D & d1w & e2w=0 { PSW = d1w:2; }
+:MOV "MDR",d2w is opcode2=0xF3E & e1w=0 & d2w { d2w = zext(MDR); }
+:MOV d1w,"MDR" is opcode2=0xF3C & d1w & e2w=0 { MDR = d1w:2; }
+
+# All of the following require even addresses (even the 3-byte ones)
+:MOV (a1),d2 is opcode1=2 & a1 & d2 { d2 = sext(*:2 a1); }
+:MOV (delta8,a1),d2 is opcode1=6 & a1 & d2; delta8 { d2 = sext(*:2 (a1 + delta8)); }
+:MOV (delta16,a1w),d2w is opcode2=0xF7C & a1w & d2w; delta16 { d2w = sext(*:2 (a1w + delta16)); }
+:MOV (delta24,a1w),d2w is opcode2=0xF48 & a1w & d2w; delta24 { d2w = sext(*:2 (a1w + delta24)); }
+:MOV (d0w,a1w),d2w is opcode2=0xF14 & d0w & a1w & d2w { d2w = sext(*:2 (a1w + d0w)); } # TODO - opcode2 and d0w overlap, right?
+# These fail to compile:
+:MOV (abs16),d2 is opcode1=0xC & e1=2 & d2; abs16 unimpl
+# :MOV (abs16),d2 is opcode1=0xC & e1=2 & d2; abs16 { d2 = sext(*:2 abs16); } # C8-CB
+:MOV (abs24),d2w is opcode2=0xF4C & e1w = 0 & d2w; abs24 unimpl
+# :MOV (abs24),d2w is opcode2=0xF4C & e1w = 0 & d2w; abs24 { d2w = sext(*:2 abs24); }
+:MOV (a1),a2 is opcode1=7 & a1 & a2; delta8=0 { a2 = *:3 a1; } # Special case of the following
+:MOV (delta8,a1),a2 is opcode1=7 & a1 & a2; delta8 { a2 = *:3 (a1 + delta8); }
+:MOV (delta16,a1w),a2w is opcode2=0xF7B & a1w & a2w; delta16 { a2w = *:3 (a1w + delta16); }
+:MOV (delta24,a1w),a2w is opcode2=0xF4F & a1w & a2w; delta24 { a2w = *:3 (a1w + delta24); }
+# I think it just doesn't like absolute addresses?
+:MOV (abs16),a2w is opcode2=0xF73 & e1w=0 & a2w; abs16 { a2w = broken_abs_read(); }
+#:MOV (abs16),a2w is opcode2=0xF73 & e1w=0 & a2w; abs16 { a2w = *:3 abs16; }
+:MOV (abs24),a2w is opcode2=0xF4D & e1w=0 & a2w; abs24 { a2w = broken_abs_read(); }
+#:MOV (abs24),a2w is opcode2=0xF4D & e1w=0 & a2w; abs24 { a2w = *:3 abs24; }
+
+:MOV d2,(a1) is opcode1=0 & a1 & d2 { *:2 a1 = d2:2; }
+:MOV d2,(delta8,a1) is opcode1=4 & a1 & d2; delta8 { *:2 (a1 + delta8) = d2:2; }
+:MOV d2w,(delta16,a1w) is opcode2=0xF78 & a1w & d2w; delta16 { *:2 (a1w + delta16) = d2w:2; }
+:MOV d2w,(delta24,a1w) is opcode2=0xF40 & a1w & d2w; delta24 { *:2 (a1w + delta24) = d2w:2; }
+:MOV d2w,(d0w,a1w) is opcode2=0xF1C & d0w & a1w & d2w { *:2 (a1w + d0w) = d2w:2; } # TODO - opcode2 and d0w overlap?
+# Also broken :|
+:MOV d2,(abs16) is opcode1=0xC & e1=0 & d2; abs16 unimpl
+#:MOV d2,(abs16) is opcode1=0xC & e1=0 & d2; abs16 { *:2 (abs16) = d2:2; }
+:MOV d2w,(abs24) is opcode2=0xF44 & e1w=0 & d2w; abs24 unimpl
+#:MOV d2w,(abs24) is opcode2=0xF44 & e1w=0 & d2w; abs24 { *:2 (abs24) = d2w:2; }
+:MOV a2,(a1) is opcode1=5 & a1 & a2; delta8=0 { *:3 a1 = a2; } # Special case of the following
+:MOV a2,(delta8,a1) is opcode1=5 & a1 & a2; delta8 { *:3 (a1+delta8) = a2; }
+:MOV a2w,(delta16,a1w) is opcode2=0xF7A & a1w & a2w; delta16 { *:3 (a1w+delta16) = a2w; }
+:MOV a2w,(delta24,a1w) is opcode2=0xF41 & a1w & a2w; delta24 { *:3 (a1w+delta24) = a2w; }
+# Yep, broken
+:MOV a2w,(abs16) is opcode2=0xF72 & e1w=0 & a2w; abs16 unimpl
+#:MOV a2w,(abs16) is opcode2=0xF72 & e1w=0 & a2w; abs16 { *:3 abs16 = a2w; }
+:MOV a2w,(abs24) is opcode2=0xF45 & e1w=0 & a2w; abs24 unimpl
+#:MOV a2w,(abs24) is opcode2=0xF45 & e1w=0 & a2w; abs24 { *:3 abs24 = a2w; }
+
+# BROKEN.  Geeze.
+# :MOV imm8,d2 is opcode1=8 & d2 & d1=d2; imm8 { d2 = broken_constant(); }
+# :MOV imm8,d2 is opcode1=8 & d2 & d1=d2; imm8 { d2 = sext(imm8); } # Replaces d2 = d1 when same registers
+:MOV imm16,d2w is opcode2=0xF8D & e1w=0 & d2w; imm16 unimpl
+# :MOV imm16,d2w is opcode2=0xF8D & e1w=0 & d2w; imm16 { d2w = sext(imm16); }
+:MOV imm24,d2w is opcode2=0xF47 & e1w=0 & d2w; imm24 unimpl
+# :MOV imm24,d2w is opcode2=0xF47 & e1w=0 & d2w; imm24 { d2w = imm24; }
+:MOV imm16,a2 is opcode1=0xD & e1=3 & a2; imm16 unimpl # DC-DF
+# :MOV imm16,a2 is opcode1=0xD & e1=3 & a2; imm16 { a2 = zext(imm16); } # DC-DF
+:MOV imm24,a2w is opcode2=0xF47 & e1w=1 & a2w; imm24 unimpl
+# :MOV imm24,a2w is opcode2=0xF47 & e1w=1 & a2w; imm24 { a2w = imm24; }
+
+:MOVX (delta8,a1w),d2w is opcode2=0xF57 & a1w & d2w; delta8 { d2w = *:3 (a1w + delta8); }
+:MOVX (delta16,a1w),d2w is opcode2=0xF77 & a1w & d2w; delta16 { d2w = *:3 (a1w + delta16); }
+:MOVX (delta24,a1w),d2w is opcode2=0xF4B & a1w & d2w; delta24 { d2w = *:3 (a1w + delta24); }
+:MOVX d2w,(delta8,a1w) is opcode2=0xF55 & a1w & d2w; delta8 { *:3 (a1w + delta8) = d2w; }
+:MOVX d2w,(delta16,a1w) is opcode2=0xF76 & a1w & d2w; delta16 { *:3 (a1w + delta16) = d2w; }
+:MOVX d2w,(delta24,a1w) is opcode2=0xF43 & a1w & d2w; delta24 { *:3 (a1w + delta24) = d2w; }
+
+# MOVB (a1w),d2w is fake and is actually MOVBU (a1w, d2w) followed by EXTXB d2w - 1 byte smaller
+:MOVB (delta8,a1w),d2w is opcode2=0xF52 & a1w & d2w; delta8 { d2w = sext(*:1 (a1w + delta8)); }
+:MOVB (delta16,a1w),d2w is opcode2=0xF7D & a1w & d2w; delta16 { d2w = sext(*:1 (a1w + delta16)); }
+:MOVB (delta24,a1w),d2w is opcode2=0xF4A & a1w & d2w; delta24 { d2w = sext(*:1 (a1w + delta24)); }
+:MOVB (d0w,a1w),d2w is opcode2=0xF04 & d0w & a1w & d2w { d2w = sext(*:1 (a1w + d0w)); } # TODO - opcode2 and d0w overlap?
+# MOVB (abs16),d2w is fake
+:MOVB (abs24),d2w is opcode2=0xF4C & e1w=1 & d2w; abs24 unimpl
+#:MOVB (abs24),d2w is opcode2=0xF4C & e1w=1 & d2w; abs24 { d2w = sext(*:1 abs24); }
+
+:MOVB d1,(a2) is opcode1=1 & d1 & a2 { *:1 a2 = d1:1; }
+:MOVB d2w,(delta8,a1w) is opcode2=0xF51 & a1w & d2w; delta8 { *:1 (a1w + delta8) = d2w:1; }
+:MOVB d2w,(delta16,a1w) is opcode2=0xF79 & a1w & d2w; delta16 { *:1 (a1w + delta16) = d2w:1; }
+:MOVB d2w,(delta24,a1w) is opcode2=0xF42 & a1w & d2w; delta24 { *:1 (a1w + delta24) = d2w:1; }
+:MOVB d2w,(d0w,a1w) is opcode2=0xF0C & d0w & a1w & d2w { *:1 (a1w + d0w) = d2w:1; } # TODO - opcode2 and d0w overlap?
+:MOVB d2,(abs16) is opcode1=0xC & e1=1 & d2; abs16 unimpl
+#:MOVB d2,(abs16) is opcode1=0xC & e1=1 & d2; abs16 { *:1 abs16 = d2:1; }
+:MOVB d2w,(abs24) is opcode2=0xF44 & e1w=1 & d2w; abs24 unimpl
+#:MOVB d2w,(abs24) is opcode2=0xF44 & e1w=1 & d2w; abs24 { *:1 abs24 = d2w:1; }
+
+:MOVBU (a1),d2 is opcode1=3 & a1 & d2 { d2 = zext(*:1 a1); }
+:MOVBU (delta8,a1w),d2w is opcode2=0xF53 & a1w & d2w; delta8 { d2w = zext(*:1 (a1w + delta8)); }
+:MOVBU (delta16,a1w),d2w is opcode2=0xF75 & a1w & d2w; delta16 { d2w = zext(*:1 (a1w + delta16)); }
+:MOVBU (delta24,a1w),d2w is opcode2=0xF49 & a1w & d2w; delta24 { d2w = zext(*:1 (a1w + delta24)); }
+:MOVBU (d0w,a1w),d2w is opcode2=0xF08 & d0w & a1w & d2w { d2w = zext(*:1 (a1w + d0w)); }
+:MOVBU (abs16),d2 is opcode1=0xC & e1=3 & d2; abs16 unimpl # CC-CF
+# :MOVBU (abs16),d2 is opcode1=0xC & e1=3 & d2; abs16 { d2 = zext(*:1 abs16); } # CC-CF
+:MOVBU (abs24),d2w is opcode2=0xF4C & e1w=2 & d2w; abs24 unimpl
+#:MOVBU (abs24),d2w is opcode2=0xF4C & e1w=2 & d2w; abs24 { d2w = zext(*:1 abs24); }
+
+# Does a 32-bit sign extension of a 16-bit value... which is a bit odd
+:EXT d1w is opcode2=0xF3C & d1w & e2w=1 {
+    # MDR = (d1w & 0x8000) ? 0xFFFF : 0 would also work, but I guess that's not understandable
+    local temp:4 = sext(d1w:2);
+    MDR = temp(2);
+}
+# More normal extension instructions
+:EXTX d2 is opcode1=0xB & e1=0 & d2 { d2 = sext(d2:2); }
+:EXTXU d2 is opcode1=0xB & e1=1 & d2 { d2 = zext(d2:2); }
+:EXTXB d2 is opcode1=0xB & e1=2 & d2 { d2 = sext(d2:1); }
+:EXTXBU d2 is opcode1=0xB & e1=3 & d2 { d2 = zext(d2:1); }
+
+macro addflags(op1, op2) {   # Flags set by add instructions
+    $(CX) = ( carry(op1:3, op2:3));
+    $(VX) = (scarry(op1:3, op2:3));
+    $(CF) = ( carry(op1:2, op2:2));
+    $(VF) = (scarry(op1:2, op2:2));
+}
+
+macro resultflags(op) {
+    $(NX) = (op:3 + op:3 s< 0);
+    $(ZX) = (op:3 + op:3 == 0);
+    $(NF) = (op:2 + op:2 s< 0);
+    $(ZF) = (op:2 + op:2 == 0);
+}
+
+:ADD d1,d2 is opcode1=0x9 & d1 & d2 { addflags(d1, d2); d2 = d1 + d2; resultflags(d2); }
+:ADD d1w,a2w is opcode2=0xF20 & d1w & a2w { addflags(d1w, a2w); a2w = d1w + a2w; resultflags(a2w); }
+:ADD a1w,d2w is opcode2=0xF2C & a1w & d2w { addflags(a1w, d2w); d2w = a1w + d2w; resultflags(d2w); }
+:ADD a1w,a2w is opcode2=0xF24 & a1w & a2w { addflags(a1w, a2w); a2w = a1w + a2w; resultflags(a2w); }
+:ADD imm8,d2 is opcode1=0xD & e1 = 1 & d2; imm8 unimpl # D4-D7... broken
+:ADD imm16,d2w is opcode2=0xF71 & e1w = 2 & d2w; imm16 unimpl
+:ADD imm24,d2w is opcode2=0xF46 & e1w = 0 & d2w; imm24 unimpl
+:ADD imm8,a2 is opcode1=0xD & e1=0 & a2; imm8 unimpl # DC-DF
+:ADD imm16,a2w is opcode2=0xF70 & e1w = 2 & a2w; imm16 unimpl
+:ADD imm24,a2w is opcode2=0xF46 & e1w = 1 & a2w; imm24 unimpl
+#:ADD imm8,d2 is opcode1=0xD & e1 = 1 & d2; imm8 { addflags(sext(imm8), d2); d2 = sext(imm8) + d2; resultflags(d2); } # D4-D7... broken
+#:ADD imm16,d2w is opcode2=0xF71 & e1w = 2 & d2w; imm16 { addflags(sext(imm16), d2w); d2w = sext(imm16) + d2w; resultflags(d2w); }
+#:ADD imm24,d2w is opcode2=0xF46 & e1w = 0 & d2w; imm24 { addflags(imm24, d2w); d2w = sext(imm24) + d2w; resultflags(d2w); }
+#:ADD imm8,a2 is opcode1=0xD & e1=3 & d2; imm8 { addflags(sext(imm8), a2); a2 = sext(imm8) + a2; resultflags(a2); } # DC-DF
+#:ADD imm16,a2w is opcode2=0xF70 & e1w = 2 & a2w; imm16 { addflags(sext(imm16), a2w); a2w = sext(imm16) + a2w; resultflags(a2w); }
+#:ADD imm24,a2w is opcode2=0xF46 & e1w = 1 & a2w; imm24 { addflags(imm24, a2w); a2w = imm24 + a2w; resultflags(a2w); }
+
+:ADDC d1w,d2w is opcode2=0xF28 & d1w & d2w {
+    #local old_cf = $(CF);
+    # TODO - this is completely broken
+    addflags(d1w, d2w);
+    #$(CX) = ( carry(d1w:3, d2w:3)) | ( carry(d1w:3, d2w:3 + old_cf));
+    #$(VX) = (scarry(d1w:3, d2w:3)) | (scarry(d1w:3, d2w:3 + old_cf));
+    #$(VF) = (scarry(d1w:2, d2w:2)) | (scarry(d1w:2, d2w:2 + old_cf));
+    #$(CF) = ( carry(d1w:2, d2w:2)) | ( carry(d1w:2, d2w:2 + old_cf));
+    #d2w = d1w + d2w + old_cf;
+    d2w = d1w + d2w;
+    resultflags(d2w);
+}
+
+# For stack pointer mainly - actual code uses imm8 but signed instead of delta8
+:ADDNF delta8,a2w is opcode2=0xF50 & e1w=3 & a2w; delta8 { a2w = a2w + delta8; }
+
+macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got this right
+    $(CX) = (op1:3 < op2:3);
+    $(VX) = (sborrow(op1:3, op2:3));
+    $(CF) = (op1:2 < op2:2);
+    $(VF) = (sborrow(op1:2, op2:2));
+}
+
+:SUB d1,d2 is opcode1=0xA & d1 & d2 { subflags(d2, d1); d2 = d2 - d1; resultflags(d2); }
+:SUB d1w,a2w is opcode2=0xF21 & d1w & a2w { subflags(a2w, d1w); a2w = a2w - d1w; resultflags(a2w); }
+:SUB a1w,d2w is opcode2=0xF2D & a1w & d2w { subflags(d2w, a1w); d2w = d2w - a1w; resultflags(d2w); }
+:SUB a1w,a2w is opcode2=0xF25 & a1w & a2w { subflags(a2w, a1w); a2w = a2w - a1w; resultflags(a2w); }
+:SUB imm16,d2w is opcode2=0xF71 & e1w=3 & d2w; imm16 unimpl
+:SUB imm24,d2w is opcode2=0xF46 & e1w=2 & d2w; imm24 unimpl
+:SUB imm16,a2w is opcode2=0xF70 & e1w=3 & a2w; imm16 unimpl
+:SUB imm24,a2w is opcode2=0xF46 & e1w=3 & a2w; imm24 unimpl
+#:SUB imm16,d2w is opcode2=0xF71 & e1w=3 & d2w; imm16 { subflags(d2w, sext(imm16)); d2w = d2w - sext(imm16); resultflags(d2w); }
+#:SUB imm24,d2w is opcode2=0xF46 & e1w=2 & d2w; imm24 { subflags(d2w, imm24); d2w = d2w - imm24; resultflags(d2w); }
+#:SUB imm16,a2w is opcode2=0xF70 & e1w=3 & a2w; imm16 { subflags(a2w, sext(imm16)); a2w = a2w - sext(imm16); resultflags(a2w); }
+#:SUB imm24,a2w is opcode2=0xF46 & e1w=3 & a2w; imm24 { subflags(a2w, imm24); a2w = a2w - imm24; resultflags(a2w); }
+
+:SUBC d1w,d2w is opcode2=0xF29 & d1w & d2w {
+    #local old_cf = $(CF);
+    # TODO - this is completely broken
+    subflags(d1w, d2w);
+    #d2w = d1w - d2w - old_cf;
+    d2w = d1w - d2w;
+    resultflags(d2w);
+}
+
+:MUL d1w,d2w is opcode2=0xF34 & d1w & d2w {
+    # VX, CX, NX, ZX, CF undefined
+    local res32:4 = sext(d1w:2) * sext(d2w:2);
+    d2w = res32:3;
+    MDR = res32(2);
+    $(VF) = 0;
+    $(NF) = (res32 s< 0);
+    $(ZF) = (res32 == 0);
+}
+:MULU d1w,d2w is opcode2=0xF35 & d1w & d2w {
+    # VX, CX, NX, ZX, CF undefined
+    local res32:4 = zext(d1w:2) * zext(d2w:2);
+    d2w = res32:3;
+    MDR = res32(2);
+    $(VF) = 0;
+    $(NF) = (res32 s< 0);
+    $(ZF) = (res32 == 0);
+}
+:DIVU d1w,d2w is opcode2=0xF36 & d1w & d2w {
+    local dividend:4 = zext(MDR) << 16 | zext(d2w:2);
+    local divisor:4 = zext(d1w:2);
+    local quotient:4 = dividend / divisor;
+    local remainder:4 = dividend % divisor;
+
+    d2w = zext(quotient:2);
+    MDR = remainder:2; # Will always fit
+
+    $(VF) = (divisor == 0) | (quotient >> 16 != 0);
+    $(NX) = 0; # Quotient d2w can't have bit 23 set
+    $(ZX) = (d2w:3 == 0);
+    $(NF) = (d2w:2 s< 0);
+    $(ZF) = (d2w:2 == 0);
+    # VX, CX, CF undefined
+    # VF 1 is overflow or div by 0, in which case the other registers are undefined
+}
+
+# These generate warnings about unused extensions/truncations
+:CMP d1w,d2w is opcode2=0xF39 & d1w & d2w { subflags(d2w, d1w); resultflags(d2w - d1w); }
+:CMP d1w,a2w is opcode2=0xF22 & d1w & a2w { subflags(a2w, d1w); resultflags(a2w - d1w); }
+:CMP a1w,d2w is opcode2=0xF2E & a1w & d2w { subflags(d2w, a1w); resultflags(d2w - a1w); }
+:CMP a1w,a2w is opcode2=0xF26 & a1w & a2w { subflags(a2w, a1w); resultflags(a2w - a1w); }
+:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 unimpl
+#:CMP imm8,d2 is opcode1=0xD & e1=2 & d2; imm8 { subflags(d2, sext(imm8:1)); resultflags(d2 - sext(imm8:1)); }
+:CMP imm16,d2w is opcode2=0xF74 & e1w=2 & d2w; imm16 unimpl
+#:CMP imm16,d2w is opcode2=0xF74 & e1w=2 & d2w; imm16 { subflags(d2w, sext(imm16:2)); resultflags(d2w - sext(imm16:2)); }
+:CMP imm24,d2w is opcode2=0xF47 & e1w=2 & d2w; imm24 unimpl
+#:CMP imm24,d2w is opcode2=0xF47 & e1w=2 & d2w; imm24 { subflags(d2w, imm24); resultflags(d2w - imm24); }
+:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 unimpl
+#:CMP imm16,a2 is opcode1=0xE & e1=3 & a2; imm16 { subflags(a2, sext(imm16:2)); resultflags(a2 - sext(imm16:2));}
+:CMP imm24,a2w is opcode2=0xF47 & e1w=3 & a2w; imm24 unimpl
+#:CMP imm24,a2w is opcode2=0xF47 & e1w=3 & a2w; imm24 { subflags(a2w, imm24); resultflags(a2w, imm24); }
+
+macro bitwise16resultflags(op) {
+    $(VF) = 0;
+    $(CF) = 0;
+    $(NF) = (op:2 s< 0);
+    $(ZF) = (op:2 == 0);
+}
+
+:AND d1w,d2w is opcode2=0xF30 & d1w & d2w { d2w = d2w & (d1w | 0xFF0000); bitwise16resultflags(d2w); }
+#:AND imm8,d2w is opcode2=0xF50 & e1w=0 & d2w; imm8 unimpl
+:AND imm8,d2w is opcode2=0xF50 & e1w=0 & d2w; imm8 { d2w = (d2w & imm8) | (d2w & 0xFF0000); bitwise16resultflags(d2w); }
+#:AND imm8,d2w is opcode2=0xF50 & e1w=0 & d2w; imm8 { d2w = d2w & (imm8 | 0xFF0000); bitwise16resultflags(d2w); }
+#:AND imm16,d2w is opcode2=0xF70 & e1w=0 & d2w; imm16 unimpl
+:AND imm16,d2w is opcode2=0xF70 & e1w=0 & d2w; imm16 { d2w = (d2w & imm16) | (d2w & 0xFF0000); bitwise16resultflags(d2w); }
+#:AND imm16,d2w is opcode2=0xF70 & e1w=0 & d2w; imm16 { d2w = d2w & (imm16 | 0xFF0000); bitwise16resultflags(d2w); }
+:AND imm16,"PSW" is opcode2=0xF71 & e1w=0 & e2w=0; imm16 { PSW = PSW & imm16; }
+
+:OR d1w,d2w is opcode2=0xF31 & d1w & d2w { d2w = d2w | (d1w & 0x00FFFF); bitwise16resultflags(d2w); }
+:OR imm8,d2w is opcode2=0xF50 & e1w=2 & d2w; imm8 { d2w = d2w | imm8; bitwise16resultflags(d2w); } # only compiles without zext, but not needed here fortunately
+:OR imm16,d2w is opcode2=0xF74 & e1w=0 & d2w; imm16 { d2w = d2w | imm16; bitwise16resultflags(d2w); } # Ditto
+:OR imm16,"PSW" is opcode2=0xF71 & e1w=1 & e2w=0; imm16 { PSW = PSW | imm16; }
+
+:XOR d1w,d2w is opcode2=0xF32 & d1w & d2w { d2w = d2w ^ (d1w & 0x00FFFF); bitwise16resultflags(d2w); }
+:XOR imm16,d2w is opcode2=0xF74 & e1w=3 & d2w; imm16 { d2w = d2w ^ imm16; } # also won't work with zext
+
+:NOT d2w is opcode2=0xF3E & e1w=1 & d2w { d2w = d2w ^ 0xFFFF; bitwise16resultflags(d2w); }
+
+:ASR d2w is opcode2=0xF33 & e1w=2 & d2w {
+    $(VF) = 0;
+    $(CF) = (d2w & 1) != 0;
+    # SLEIGH's >> is arithmetic shift left, but we need to truncate so we have to handle it manually.
+    # Fortunately it's easy to mix in with the handling of the top 8 bits.
+    d2w = ((d2w & 0xFFFF) >> 1) | (d2w & 0xFF8000);
+    $(NF) = (d2w:2 s< 0);
+    $(ZF) = (d2w:2 == 0);
+}
+:LSR d2w is opcode2=0xF33 & e1w=3 & d2w {
+    $(VF) = 0;
+    $(CF) = (d2w & 1) != 0;
+    # We need to zero bit 15 here.  I think this needs to be done manually, but I'm not sure.
+    d2w = (((d2w & 0x00FFFF) >> 1) | (d2w & 0xFF0000)) & 0xFF7FFF;
+    $(NF) = (d2w:2 s< 0);
+    $(ZF) = (d2w:2 == 0);
+}
+# Left shift is done by adding to itself
+
+:ROR d2w is opcode2=0xF33 & e1w=1 & d2w {
+    $(VF) = 0;
+    local old_cf:3 = zext($(CF));
+    $(CF) = (d2w & 1) != 0;
+    # We need to zero bit 15 here.  I think this needs to be done manually, but I'm not sure.
+    d2w = ((((d2w & 0x00FFFF) >> 1) | (d2w & 0xFF0000)) & 0xFF7FFF) | (old_cf << 15);
+    $(NF) = (d2w:2 s< 0);
+    $(ZF) = (d2w:2 == 0);
+}
+:ROL d2w is opcode2=0xF33 & e1w=0 & d2w {
+    $(VF) = 0;
+    local old_cf:3 = zext($(CF));
+    $(CF) = (d2w & 0x8000) != 0;
+    d2w = ((d2w << 1) & 0x00FFFE) | (d2w & 0xFF0000) | old_cf;
+    $(NF) = (d2w:2 s< 0);
+    $(ZF) = (d2w:2 == 0);
+}
+
+:BTST imm8,d2w is opcode2=0xF50 & e1w=1 & d2w; imm8 { bitwise16resultflags(d2w & imm8); } # zext(imm8) causes errors
+:BTST imm16,d2w is opcode2=0xF70 & e1w=1 & d2w; imm16 { bitwise16resultflags(d2w & imm16); } # zext(imm16) causes errors
+
+# There is apparently an unneeded truncation in here
+:BSET d2w,(a1w) is opcode2=0xF02 & a1w & d2w {
+    local mem_value:1 = zext(*:1 a1w);
+    bitwise16resultflags(zext(mem_value) & d2w); # Yes, bitwise and here for the flags
+    *:1 a1w = (mem_value | d2w:1);
+}
+:BCLR d2w,(a1w) is opcode2=0xF03 & a1w & d2w {
+    local mem_value:1 = zext(*:1 a1w);
+    bitwise16resultflags(zext(mem_value) & d2w); # Yes, bitwise and here for the flags
+    *:1 a1w = (mem_value & ~d2w:1);
+}
+
+dest: rel is delta8 [ rel = inst_next + delta8; ] {
+    export *[ram]:3 rel; # Does this make sense for here?
+}
+label16: rel is delta16 [ rel = inst_next + delta16; ] {
+    export *[ram]:3 rel; # Does this make sense for here?
+}
+label24: rel is delta24 [ rel = inst_next + delta24; ] {
+    export *[ram]:3 rel; # Does this make sense for here?
+}
+
+:BEQ dest is fullopcode1=0xE8; dest { if ($(ZF) == 1) goto dest; }
+:BNE dest is fullopcode1=0xE9; dest { if ($(ZF) == 0) goto dest; }
+:BLT dest is fullopcode1=0xE0; dest { if (($(VF) ^ $(NF)) == 1) goto dest; }
+:BLE dest is fullopcode1=0xE3; dest { if ((($(VF) ^ $(NF)) | $(ZF)) == 1) goto dest; }
+:BGE dest is fullopcode1=0xE2; dest { if (($(VF) ^ $(NF)) == 0) goto dest; }
+:BGT dest is fullopcode1=0xE1; dest { if ((($(VF) ^ $(NF)) | $(ZF)) == 0) goto dest; }
+:BCS dest is fullopcode1=0xE4; dest { if ($(CF) == 1) goto dest; }
+:BLS dest is fullopcode1=0xE7; dest { if (($(CF) | $(ZF)) == 1) goto dest; }
+:BCC dest is fullopcode1=0xE6; dest { if ($(CF) == 0) goto dest; }
+:BHI dest is fullopcode1=0xE5; dest { if (($(CF) | $(ZF)) == 0) goto dest; }
+:BVC dest is fullopcode2=0xF5FC; dest { if ($(VF) == 0) goto dest; }
+:BVS dest is fullopcode2=0xF5FD; dest { if ($(VF) == 1) goto dest; }
+:BNC dest is fullopcode2=0xF5FE; dest { if ($(NF) == 0) goto dest; }
+:BNS dest is fullopcode2=0xF5FF; dest { if ($(NF) == 1) goto dest; }
+:BRA dest is fullopcode1=0xEA; dest { goto dest; }
+
+# Same opcodes as the previous ones, with a prefix of 0xF5.  Convenient!
+:BEQX dest is fullopcode2=0xF5E8; dest { if ($(ZX) == 1) goto dest; }
+:BNEX dest is fullopcode2=0xF5E9; dest { if ($(ZX) == 0) goto dest; }
+:BLTX dest is fullopcode2=0xF5E0; dest { if (($(VX) ^ $(NX)) == 1) goto dest; }
+:BLEX dest is fullopcode2=0xF5E3; dest { if ((($(VX) ^ $(NX)) | $(ZX)) == 1) goto dest; }
+:BGEX dest is fullopcode2=0xF5E2; dest { if (($(VX) ^ $(NX)) == 0) goto dest; }
+:BGTX dest is fullopcode2=0xF5E1; dest { if ((($(VX) ^ $(NX)) | $(ZX)) == 0) goto dest; }
+:BCSX dest is fullopcode2=0xF5E4; dest { if ($(CX) == 1) goto dest; }
+:BLSX dest is fullopcode2=0xF5E7; dest { if (($(CX) | $(ZX)) == 1) goto dest; }
+:BCCX dest is fullopcode2=0xF5E6; dest { if ($(CX) == 0) goto dest; }
+:BHIX dest is fullopcode2=0xF5E5; dest { if (($(CX) | $(ZX)) == 0) goto dest; }
+# Now same, but with EC instead of FC
+:BVCX dest is fullopcode2=0xF5EC; dest { if ($(VX) == 0) goto dest; }
+:BVSX dest is fullopcode2=0xF5ED; dest { if ($(VX) == 1) goto dest; }
+:BNCX dest is fullopcode2=0xF5EE; dest { if ($(NX) == 0) goto dest; }
+:BNSX dest is fullopcode2=0xF5EF; dest { if ($(NX) == 1) goto dest; }
+
+:JMP label16 is fullopcode1=0xFC; label16 { goto label16; }
+:JMP label24 is fullopcode2=0xF4E0; label24 { goto label24; }
+:JMP (a1w) is opcode2=0xF00 & a1w & e2w=0 { goto [a1w]; }
+
+:JSR label16 is fullopcode1=0xFD; label16 { *:3 A3 = inst_next; A3 = A3 - 4; call label16; }
+:JSR label24 is fullopcode2=0xF4E1; label24 { *:3 A3 = inst_next; A3 = A3 - 4; call label24; }
+:JSR (a1w) is opcode2=0xF00 & a1w & e2w=1 { *:3 A3 = inst_next; A3 = A3 - 4; call [a1w]; }
+
+:NOP is fullopcode1=0xF6 {}
+
+:RTS is fullopcode1=0xFE {
+    local addr = *:3 A3;
+    A3 = A3 + 4;
+    # I'm not sure the brackets here (and in JMP/JSR (A1)) are correct
+    return [addr];
+}
+
+:RTI is fullopcode1=0xEB {
+    PSW = *:2 A3;
+    local addr = *:3 (A3 + 2);
+    A3 = A3 + 6;
+    return [addr];
+}

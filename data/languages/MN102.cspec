@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<compiler_spec>
+  <!-- http://hitmen.c02.at/files/yagcd/yagcd/chap5.html#sec5.7.4 -->
+  <global>
+    <range space="ram"/>
+    <range space="register"/>
+  </global>
+  <stackpointer register="A3" space="ram" growth="negative"/>
+  <default_proto>
+    <prototype name="__stdcall" extrapop="-2" stackshift="-2" strategy="register">
+      <!-- Complete guess! -->
+      <input>
+        <pentry minsize="1" maxsize="1">
+          <register name="D0"/>
+        </pentry>
+        <pentry minsize="1" maxsize="1">
+          <register name="D1"/>
+        </pentry>
+        <pentry minsize="1" maxsize="1">
+          <register name="D2"/>
+        </pentry>
+        <pentry minsize="1" maxsize="1">
+          <register name="D3"/>
+        </pentry>
+      </input>
+      <output>
+        <pentry minsize="1" maxsize="1">
+          <register name="D0"/>
+        </pentry>
+      </output>
+      <unaffected>
+        <register name="A3"/>
+      </unaffected>
+      <localrange>
+        <range space="stack" first="0x0" last="0xf"/>
+      </localrange>
+    </prototype>
+  </default_proto>
+  
+  <!--<callfixup name="switch_override_ACC">
+    <pcode>
+      <body><![CDATA[
+			PC = inst_next + zext(ACC) * 3;
+            goto [PC];
+      ]]></body>
+    </pcode>
+  </callfixup>-->
+  
+</compiler_spec>
