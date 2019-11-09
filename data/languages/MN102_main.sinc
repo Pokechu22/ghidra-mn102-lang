@@ -48,19 +48,19 @@ define register offset=29 size=2 [ PSW ];
 
 # These seem to cause issues, not only in code but also with https://github.com/NationalSecurityAgency/ghidra/issues/1144
 # define bitrange ZF=PSW[0,1]   # Zero flag
-# 				NF=PSW[1,1]   # Negative flag
-# 				CF=PSW[2,1]   # Carry flag - 16 bit!
-# 				VF=PSW[3,1]   # Overflow flag - 16 bit!
-# 				ZX=PSW[4,1]   # Extended zero flag
-# 				NX=PSW[5,1]   # Extended negative flag
-# 				CX=PSW[6,1]   # Extended carry flag
-# 				VX=PSW[7,1]   # Extended overflow flag
-# 				IM0=PSW[8,1]  # Interrupt mask 0
-# 				IM1=PSW[9,1]  # Interrupt mask 1
-# 				IM2=PSW[10,1] # Interrupt mask 2
-# 				IE=PSW[11,1]  # Interrupt enable
-# 				S0=PSW[12,1]  # Software bit 0
-# 				S1=PSW[13,1]; # Software bit 1
+#                 NF=PSW[1,1]   # Negative flag
+#                 CF=PSW[2,1]   # Carry flag - 16 bit!
+#                 VF=PSW[3,1]   # Overflow flag - 16 bit!
+#                 ZX=PSW[4,1]   # Extended zero flag
+#                 NX=PSW[5,1]   # Extended negative flag
+#                 CX=PSW[6,1]   # Extended carry flag
+#                 VX=PSW[7,1]   # Extended overflow flag
+#                 IM0=PSW[8,1]  # Interrupt mask 0
+#                 IM1=PSW[9,1]  # Interrupt mask 1
+#                 IM2=PSW[10,1] # Interrupt mask 2
+#                 IE=PSW[11,1]  # Interrupt enable
+#                 S0=PSW[12,1]  # Software bit 0
+#                 S1=PSW[13,1]; # Software bit 1
 
 # so instead use this hack found in the 8051_main file...
 #@define ZF "PSW[0,1]"   # Zero flag
@@ -605,10 +605,10 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 :PXST is opcode2=0xF3 & opcode2f=0xFC unimpl
 
 macro bittest(addr, bit) {
-	$(VF) = 0;
-	$(CF) = 0;
-	$(NF) = 0;
-	$(ZF) = ((addr & (1 << bit)) != 0);
+    $(VF) = 0;
+    $(CF) = 0;
+    $(NF) = 0;
+    $(ZF) = ((addr & (1 << bit)) != 0);
 }
 
 # Test bits out of memory, 1<<bit, and branches if 0/nonzero
@@ -649,16 +649,53 @@ macro bittest(addr, bit) {
 :BSET (Addr16_1)bit2 is opcode2=0xF5 & opcode2x=0xD & bitmode2=0 & bit2; Addr16_1 { Addr16_1 = Addr16_1 | (1 << bit2); }
 :BCLR (Addr16_1)bit2 is opcode2=0xF5 & opcode2x=0xD & bitmode2=1 & bit2; Addr16_1 { Addr16_1 = Addr16_1 & ~(1 << bit2); }
 
-# F5 4n instructions (extended code J)... this is a bit jank
-:MULQL d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=0 unimpl
-:MULQH d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=1 unimpl
+# All of these new multiplication instructions are labeled with (H.M.),
+# which is never described in this manual.  I'm assuming it stands for
+# "hardware multiplier", since MN102H does have one according to the datasheet.
+# They also don't set flags, which does indicate something separate going on.
+# There also is a bit of weirdness with the opcodes (reserving a whole extra
+# byte that it doesn't seem to really need), but maybe that's for timing purposes...?
+
+# It looks like MULQL uses the lower bits, MULQH does the the higher bits, and
+# MULQ does both.  MULQH also has a note about sign-extending the output --
+# I guess that comes up there since it puts a 16-bit value into a 24-bit register,
+# while MULQ puts the upper 16-bit value into the 16-bit MDR register.
+
+# F5 4n instructions (extended code J)
+:MULQL d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=0 {
+    local res32:4 = zext(d1w:2) * zext(d2w:2);
+    d2w = res32:3;
+}
+:MULQH d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=1 {
+    local res32:4 = zext(d1w:2) * zext(d2w:2);
+    local reshigh:2 = res32(2);
+    d2w = sext(reshigh);
+}
 # F5 6n instructions (extended code K)
-:MULQ d1w,d2w is opcode2=0xF5 & opcode2x=0x6 & d1w & d2w; imm8=0x10 unimpl
+:MULQ d1w,d2w is opcode2=0xF5 & opcode2x=0x6 & d1w & d2w; imm8=0x10 {
+    local res32:4 = zext(d1w:2) * zext(d2w:2);
+    d2w = res32:3;
+    MDR = res32(2);
+}
 # F5 Fn instructions, n between 0 and 7 (extended code L)
-:MULQL imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x04; imm8 unimpl
-:MULQH imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x05; imm8 unimpl
-:MULQL imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x08; imm16 unimpl
-:MULQH imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x09; imm16 unimpl
+:MULQL Imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x04; Imm8 {
+    local res32:4 = zext(d2w:2) * zext(Imm8);
+    d2w = res32:3;
+}
+:MULQH Imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x05; Imm8 {
+    local res32:4 = zext(d2w:2) * zext(Imm8);
+    local reshigh:2 = res32(2);
+    d2w = sext(reshigh);
+}
+:MULQL Imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x08; Imm16 {
+    local res32:4 = zext(d2w:2) * zext(Imm16);
+    d2w = res32:3;
+}
+:MULQH Imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x09; Imm16 {
+    local res32:4 = zext(d2w:2) * zext(Imm16);
+    local reshigh:2 = res32(2);
+    d2w = sext(reshigh);
+}
 
 # This should not exist at all, but I am running into it
 :UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 unimpl
