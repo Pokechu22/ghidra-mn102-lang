@@ -129,6 +129,7 @@ define token format2 (16)
    opcode2     = (0,7)
    opcode2x    = (12,15)
    opcode2f    = (8,15)
+   opcode20    = (14,15) # used with d0w
    e1w         = (10,11)
    a1w         = (10,11)
    d1w         = (10,11)
@@ -196,7 +197,7 @@ define pcodeop broken_constant;
 :MOV (delta8,a1),d2 is opcode1=6 & a1 & d2; delta8 { d2 = sext(*:2 (a1 + delta8)); }
 :MOV (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0xC & a1w & d2w; delta16 { d2w = sext(*:2 (a1w + delta16)); }
 :MOV (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x8 & a1w & d2w; delta24 { d2w = sext(*:2 (a1w + delta24)); }
-:MOV (d0w,a1w),d2w is opcode2=0xF1 & opcode2x=0x4 & d0w & a1w & d2w { d2w = sext(*:2 (a1w + d0w)); } # TODO - opcode2 and d0w overlap, right?
+:MOV (d0w,a1w),d2w is opcode2=0xF1 & opcode20=1 & d0w & a1w & d2w { d2w = sext(*:2 (a1w + d0w)); }
 :MOV (Addr16_2),d2 is opcode1=0xC & e1=2 & d2; Addr16_2 { d2 = sext(Addr16_2); } # C8-CB
 :MOV (Addr24_2),d2w is opcode2=0xF4 & opcode2x=0xC & e1w = 0 & d2w; Addr24_2 { d2w = sext(Addr24_2); }
 :MOV (a1),a2 is opcode1=7 & a1 & a2; delta8=0 { a2 = *:3 a1; } # Special case of the following
@@ -210,7 +211,7 @@ define pcodeop broken_constant;
 :MOV d2,(delta8,a1) is opcode1=4 & a1 & d2; delta8 { *:2 (a1 + delta8) = d2:2; }
 :MOV d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x8 & a1w & d2w; delta16 { *:2 (a1w + delta16) = d2w:2; }
 :MOV d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x0 & a1w & d2w; delta24 { *:2 (a1w + delta24) = d2w:2; }
-:MOV d2w,(d0w,a1w) is opcode2=0xF1 & opcode2x=0xC & d0w & a1w & d2w { *:2 (a1w + d0w) = d2w:2; } # TODO - opcode2 and d0w overlap?
+:MOV d2w,(d0w,a1w) is opcode2=0xF1 & opcode20=3 & d0w & a1w & d2w { *:2 (a1w + d0w) = d2w:2; }
 :MOV d2,(Addr16_2) is opcode1=0xC & e1=0 & d2; Addr16_2 { Addr16_2 = d2:2; }
 :MOV d2w,(Addr24_2) is opcode2=0xF4 & opcode2x=0x4 & e1w=0 & d2w; Addr24_2 { Addr24_2 = d2w:2; }
 :MOV a2,(a1) is opcode1=5 & a1 & a2; delta8=0 { *:3 a1 = a2; } # Special case of the following
@@ -242,7 +243,7 @@ define pcodeop broken_constant;
 :MOVB (delta8,a1w),d2w is opcode2=0xF5 & opcode2x=0x2 & a1w & d2w; delta8 { d2w = sext(*:1 (a1w + delta8)); }
 :MOVB (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0xD & a1w & d2w; delta16 { d2w = sext(*:1 (a1w + delta16)); }
 :MOVB (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0xA & a1w & d2w; delta24 { d2w = sext(*:1 (a1w + delta24)); }
-:MOVB (d0w,a1w),d2w is opcode2=0xF0 & opcode2x=0x4 & d0w & a1w & d2w { d2w = sext(*:1 (a1w + d0w)); } # TODO - opcode2 and d0w overlap?
+:MOVB (d0w,a1w),d2w is opcode2=0xF0 & opcode20=1 & d0w & a1w & d2w { d2w = sext(*:1 (a1w + d0w)); }
 # MOVB (abs16),d2w is fake
 :MOVB (Addr24_1),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=1 & d2w; Addr24_1 { d2w = sext(Addr24_1); }
 
@@ -250,7 +251,7 @@ define pcodeop broken_constant;
 :MOVB d2w,(delta8,a1w) is opcode2=0xF5 & opcode2x=0x1 & a1w & d2w; delta8 { *:1 (a1w + delta8) = d2w:1; }
 :MOVB d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x9 & a1w & d2w; delta16 { *:1 (a1w + delta16) = d2w:1; }
 :MOVB d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x2 & a1w & d2w; delta24 { *:1 (a1w + delta24) = d2w:1; }
-:MOVB d2w,(d0w,a1w) is opcode2=0xF0 & opcode2x=0xC & d0w & a1w & d2w { *:1 (a1w + d0w) = d2w:1; } # TODO - opcode2 and d0w overlap?
+:MOVB d2w,(d0w,a1w) is opcode2=0xF0 & opcode20=3 & d0w & a1w & d2w { *:1 (a1w + d0w) = d2w:1; }
 :MOVB d2,(Addr16_1) is opcode1=0xC & e1=1 & d2; Addr16_1 { Addr16_1 = d2:1; }
 :MOVB d2w,(Addr24_1) is opcode2=0xF4 & opcode2x=0x4 & e1w=1 & d2w; Addr24_1 { Addr24_1 = d2w:1; }
 
@@ -258,7 +259,7 @@ define pcodeop broken_constant;
 :MOVBU (delta8,a1w),d2w is opcode2=0xF5 & opcode2x=0x3 & a1w & d2w; delta8 { d2w = zext(*:1 (a1w + delta8)); }
 :MOVBU (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0x5 & a1w & d2w; delta16 { d2w = zext(*:1 (a1w + delta16)); }
 :MOVBU (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x9 & a1w & d2w; delta24 { d2w = zext(*:1 (a1w + delta24)); }
-:MOVBU (d0w,a1w),d2w is opcode2=0xF0 & opcode2x=0x8 & d0w & a1w & d2w { d2w = zext(*:1 (a1w + d0w)); }
+:MOVBU (d0w,a1w),d2w is opcode2=0xF0 & opcode20=2 & d0w & a1w & d2w { d2w = zext(*:1 (a1w + d0w)); }
 :MOVBU (Addr16_1),d2 is opcode1=0xC & e1=3 & d2; Addr16_1 { d2 = zext(Addr16_1); } # CC-CF
 :MOVBU (Addr24_1),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=2 & d2w; Addr24_1 { d2w = zext(Addr24_1); }
 
