@@ -1,5 +1,7 @@
 # sleigh specification file for Matsushita MN102
 
+@define H_VARIANT 1
+
 #@define BIT_OPS "PCODEOPS"
 #@define BIT_OPS "SHIFTS" 
 @define BIT_OPS "BIT_ADDRS"
@@ -133,7 +135,18 @@ define token format2 (16)
    e2w         = (8,9)
    a2w         = (8,9)
    d2w         = (8,9)
-   d0w         = (12,13);
+   d0w         = (12,13)
+   # h variant only
+   bitmode2    = (8,8)
+   bit2        = (9,11);
+
+# H variant only
+define token format3 (24)
+   opcode3     = (0,7)
+   opcode32    = (8,15)
+   opcode33    = (20,23)
+   bitmode     = (16,16)
+   bit         = (17,19);
 
 # n.b. the manual uses d8/d16/d24, but that gets confusing with d1/d2
 define token immtoken8(8)
@@ -576,12 +589,65 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 }
 
 # Unknown instructions, based on the number of bytes that each prefix implies according to the manual
-:UNK_F0 imm8 is fullopcode1=0xF0; imm8 unimpl # 2 bytes
-:UNK_F1 imm8 is fullopcode1=0xF1; imm8 unimpl # 2 bytes
-:UNK_F2 imm8 is fullopcode1=0xF2; imm8 unimpl # 2 bytes
-:UNK_F3 imm8 is fullopcode1=0xF3; imm8 unimpl # 2 bytes
-:UNK_F4 imm8 imm24 is fullopcode1=0xF4; imm8; imm24 unimpl # 5 bytes
-:UNK_F5 imm8 delta8 is fullopcode1=0xF5; imm8; delta8 unimpl # 3 bytes
-:UNK_F7 imm8 imm16 is fullopcode1=0xF7; imm8; imm16 unimpl # 4 bytes
+#:UNK_F0 imm8 is fullopcode1=0xF0; imm8 unimpl # 2 bytes
+#:UNK_F1 imm8 is fullopcode1=0xF1; imm8 unimpl # 2 bytes
+#:UNK_F2 imm8 is fullopcode1=0xF2; imm8 unimpl # 2 bytes
+#:UNK_F3 imm8 is fullopcode1=0xF3; imm8 unimpl # 2 bytes
+#:UNK_F4 imm8 imm24 is fullopcode1=0xF4; imm8; imm24 unimpl # 5 bytes
+#:UNK_F5 imm8 delta8 is fullopcode1=0xF5; imm8; delta8 unimpl # 3 bytes
+#:UNK_F7 imm8 imm16 is fullopcode1=0xF7; imm8; imm16 unimpl # 4 bytes
 
 :BREAK is fullopcode1=0xFF unimpl # GDB extension
+
+@if defined(H_VARIANT)
+# MN102L (Pub.No.12250-030E) vs MN102H (Pub.No.22360-013E):
+# Simple instructions all match
+# F0, F1, F2 instructions match
+# Additional F3 instructions: F3 FC is PXST, F3 FE is extended code H, F3 FF is extended code I, also a new warning about moving to PSW (but the document doesn't have much details on instructions, so it might not actually be new)
+# Additional F4 instructions, BTST and BSET variants
+# Massive pile of F5 instructions
+# Nothing new with F7
+
+:PXST is opcode2=0xF3 & opcode2f=0xFC unimpl
+# Test bits out of memory, 1<<bit, and branches if 0/nonzero
+:TBZ (Addr24_1)bit,delta8 is opcode3=0xF3 & opcode32=0xFE & opcode33=0xC & bitmode=0 & bit; Addr24_1; delta8 unimpl
+:TBNZ (Addr24_1)bit,delta8 is opcode3=0xF3 & opcode32=0xFE & opcode33=0xC & bitmode=1 & bit; Addr24_1; delta8 unimpl
+
+:BSET (Addr24_1)bit is opcode3=0xF3 & opcode32=0xFE & opcode33=0xD & bitmode=0 & bit; Addr24_1 unimpl
+:BLCR (Addr24_1)bit is opcode3=0xF3 & opcode32=0xFE & opcode33=0xD & bitmode=1 & bit; Addr24_1 unimpl
+
+# OH.  These should also use delta8 twice (different deltas)..., and also the register is jank...
+:TBZ (imm8,"A2")bit,delta8 is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=0 & bit; imm8; delta8 unimpl
+:TBZ (imm8,"A3")bit,delta8 is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=1 & bit; imm8; delta8 unimpl
+:BSET (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=0 & bit; delta8 unimpl
+:BSET (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=1 & bit; delta8 unimpl
+:TBNZ (imm8,"A2")bit,delta8 is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=0 & bit; imm8; delta8 unimpl
+:TBNZ (imm8,"A3")bit,delta8 is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; imm8; delta8 unimpl
+:BCLR (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=0 & bit; delta8 unimpl
+:BCLR (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 unimpl
+
+# Direct F5 instructions
+:TBZ (imm8,"A0")bit2,delta8 is opcode2=0xF5 & opcode2x=0x8 & bitmode2=0 & bit2; imm8; delta8 unimpl
+:TBZ (imm8,"A1")bit2,delta8 is opcode2=0xF5 & opcode2x=0x8 & bitmode2=1 & bit2; imm8; delta8 unimpl
+:BSET (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=0 & bit2; delta8 unimpl
+:BSET (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=1 & bit2; delta8 unimpl
+:TBNZ (imm8,"A0")bit2,delta8 is opcode2=0xF5 & opcode2x=0xA & bitmode2=0 & bit2; imm8; delta8 unimpl
+:TBNZ (imm8,"A1")bit2,delta8 is opcode2=0xF5 & opcode2x=0xA & bitmode2=1 & bit2; imm8; delta8 unimpl
+:BCLR (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=0 & bit2; delta8 unimpl
+:BCLR (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=1 & bit2; delta8 unimpl
+:TBZ (Addr16_1)bit2,delta8 is opcode2=0xF5 & opcode2x=0xC & bitmode2=0 & bit2; Addr16_1; delta8 unimpl
+:TBNZ (Addr16_1)bit2,delta8 is opcode2=0xF5 & opcode2x=0xC & bitmode2=1 & bit2; Addr16_1; delta8 unimpl
+:BSET (Addr16_1)bit2 is opcode2=0xF5 & opcode2x=0xD & bitmode2=0 & bit2; Addr16_1 unimpl
+:BCLR (Addr16_1)bit2 is opcode2=0xF5 & opcode2x=0xD & bitmode2=1 & bit2; Addr16_1 unimpl
+
+# F5 4n instructions (extended code J)... this is a bit jank
+:MULQL d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=0 unimpl
+:MULQH d1w,d2w is opcode2=0xF5 & opcode2x=0x4 & d1w & d2w; imm8=1 unimpl
+# F5 6n instructions (extended code K)
+:MULQ d1w,d2w is opcode2=0xF5 & opcode2x=0x6 & d1w & d2w; imm8=0x10 unimpl
+# F5 Fn instructions, n between 0 and 7 (extended code L)
+:MULQL imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x04; imm8 unimpl
+:MULQH imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x05; imm8 unimpl
+:MULQL imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x08; imm16 unimpl
+:MULQH imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x09; imm16 unimpl
+@endif
