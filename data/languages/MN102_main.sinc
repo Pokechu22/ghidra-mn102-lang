@@ -589,15 +589,6 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
     return [addr];
 }
 
-# Unknown instructions, based on the number of bytes that each prefix implies according to the manual
-#:UNK_F0 imm8 is fullopcode1=0xF0; imm8 unimpl # 2 bytes
-#:UNK_F1 imm8 is fullopcode1=0xF1; imm8 unimpl # 2 bytes
-#:UNK_F2 imm8 is fullopcode1=0xF2; imm8 unimpl # 2 bytes
-#:UNK_F3 imm8 is fullopcode1=0xF3; imm8 unimpl # 2 bytes
-#:UNK_F4 imm8 imm24 is fullopcode1=0xF4; imm8; imm24 unimpl # 5 bytes
-#:UNK_F5 imm8 delta8 is fullopcode1=0xF5; imm8; delta8 unimpl # 3 bytes
-#:UNK_F7 imm8 imm16 is fullopcode1=0xF7; imm8; imm16 unimpl # 4 bytes
-
 :BREAK is fullopcode1=0xFF unimpl # GDB extension
 
 @if defined(H_VARIANT)
@@ -626,6 +617,15 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 :TBNZ (imm8,"A3")bit,delta8 is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; imm8; delta8 unimpl
 :BCLR (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=0 & bit; delta8 unimpl
 :BCLR (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 unimpl
+
+# New F4 instructions
+:BSET imm8,(Addr24_1) is opcode2=0xF4 & opcode2f=0x4b; Addr24_1; imm8 unimpl
+:BCLR imm8,(Addr24_1) is opcode2=0xF4 & opcode2f=0x4f; Addr24_1; imm8 unimpl
+:BSET imm8,(Addr16_1) is opcode2=0xF4 & opcode2f=0xe3; Addr16_1; imm8 unimpl
+:BCLR imm8,(Addr16_1) is opcode2=0xF4 & opcode2f=0xe7; Addr16_1; imm8 unimpl
+:BSET imm8,(delta8,a2w) is opcode2=0xF4 & opcode2x=0xE & e1w=2 & a2w; delta8; imm8 unimpl
+:BCLR imm8,(delta8,a2w) is opcode2=0xF4 & opcode2x=0xE & e1w=3 & a2w; delta8; imm8 unimpl
+# also things F4 EX
 
 # Direct F5 instructions
 :TBZ (imm8,"A0")bit2,delta8 is opcode2=0xF5 & opcode2x=0x8 & bitmode2=0 & bit2; imm8; delta8 unimpl
