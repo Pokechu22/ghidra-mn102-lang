@@ -8,7 +8,7 @@
   </global>
   <stackpointer register="A3" space="ram" growth="negative"/>
   <default_proto>
-    <prototype name="__stdcall" extrapop="-2" stackshift="-2" strategy="register">
+    <prototype name="__stdcall" extrapop="0" stackshift="0" strategy="register">
       <!-- Complete guess! -->
       <input>
         <pentry minsize="1" maxsize="1">
@@ -32,9 +32,19 @@
       <unaffected>
         <register name="A3"/>
       </unaffected>
-      <localrange>
+      <killedbycall>
+        <register name="PSW_ZF" />
+        <register name="PSW_NF" />
+        <register name="PSW_CF" />
+        <register name="PSW_VF" />
+        <register name="PSW_ZX" />
+        <register name="PSW_NX" />
+        <register name="PSW_CX" />
+        <register name="PSW_VX" />
+      </killedbycall>
+      <!--<localrange>
         <range space="stack" first="0x0" last="0xf"/>
-      </localrange>
+      </localrange>-->
     </prototype>
   </default_proto>
   

@@ -79,7 +79,7 @@ define register offset=29 size=2 [ PSW ];
 #@define S1 "PSW[13,1]"  # Software bit 1
 
 # Hack further
-define register offset=32 size=1 [ PSW_ZF PSW_NF PSW_CF PSW_VF PSW_ZX PSW_NX PSW_CX PSW_VX IM0 IM1 IM2 IE S0 S1 ];
+define register offset=32 size=1 [ PSW_ZF PSW_NF PSW_CF PSW_VF PSW_ZX PSW_NX PSW_CX PSW_VX PSW_IM0 PSW_IM1 PSW_IM2 PSW_IE PSW_S0 PSW_S1 ];
 @define ZF  "PSW_ZF"
 @define NF  "PSW_NF"
 @define CF  "PSW_CF"
