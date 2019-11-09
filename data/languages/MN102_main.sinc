@@ -618,14 +618,14 @@ macro bittest(addr, bit) {
 :BSET (Addr24_1)bit is opcode3=0xF3 & opcode32=0xFE & opcode33=0xD & bitmode=0 & bit; Addr24_1 { Addr24_1 = Addr24_1 | (1 << bit); }
 :BLCR (Addr24_1)bit is opcode3=0xF3 & opcode32=0xFE & opcode33=0xD & bitmode=1 & bit; Addr24_1 { Addr24_1 = Addr24_1 & ~(1 << bit); }
 
-:TBZ  (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=0 & bit; delta8; dest { bittest(*:1 A2, bit); if ($(ZF) == 1) goto dest; }
-:TBZ  (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=1 & bit; delta8; dest { bittest(*:1 A3, bit); if ($(ZF) == 1) goto dest; }
-:BSET (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=0 & bit; delta8 { *:1 A2 = *:1 A2 | (1 << bit); }
-:BSET (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=1 & bit; delta8 { *:1 A3 = *:1 A3 | (1 << bit); }
-:TBNZ (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=0 & bit; delta8; dest { bittest(*:1 A2, bit); if ($(ZF) == 0) goto dest; }
-:TBNZ (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; delta8; dest { bittest(*:1 A3, bit); if ($(ZF) == 0) goto dest; }
-:BCLR (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=0 & bit; delta8 { *:1 A2 = *:1 A2 & ~(1 << bit); }
-:BCLR (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 { *:1 A3 = *:1 A3 & ~(1 << bit); }
+:TBZ  (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=0 & bit; delta8; dest { bittest(*:1 (A2 + delta8), bit); if ($(ZF) == 1) goto dest; }
+:TBZ  (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=1 & bit; delta8; dest { bittest(*:1 (A3 + delta8), bit); if ($(ZF) == 1) goto dest; }
+:BSET (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=0 & bit; delta8 { *:1 (A2 + delta8) = *:1 (A2 + delta8) | (1 << bit); }
+:BSET (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=1 & bit; delta8 { *:1 (A3 + delta8) = *:1 (A3 + delta8) | (1 << bit); }
+:TBNZ (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=0 & bit; delta8; dest { bittest(*:1 (A2 + delta8), bit); if ($(ZF) == 0) goto dest; }
+:TBNZ (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; delta8; dest { bittest(*:1 (A3 + delta8), bit); if ($(ZF) == 0) goto dest; }
+:BCLR (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=0 & bit; delta8 { *:1 (A2 + delta8) = *:1 (A2 + delta8) & ~(1 << bit); }
+:BCLR (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 { *:1 (A3 + delta8) = *:1 (A3 + delta8) & ~(1 << bit); }
 
 # New F4 instructions
 :BSET imm8,(Addr24_1) is opcode2=0xF4 & opcode2f=0x4b; Addr24_1; imm8 { Addr24_1 = Addr24_1 | imm8; }
@@ -636,14 +636,14 @@ macro bittest(addr, bit) {
 :BCLR imm8,(delta8,a2w) is opcode2=0xF4 & opcode2x=0xE & e1w=3 & a2w; delta8; imm8 { *:1 (a2w + delta8) = *:1 (a2w + delta8) & ~imm8; }
 
 # Direct F5 instructions
-:TBZ  (delta8,"A0")bit2,dest is opcode2=0xF5 & opcode2x=0x8 & bitmode2=0 & bit2; delta8; dest { bittest(*:1 A0, bit2); if ($(ZF) == 1) goto dest; }
-:TBZ  (delta8,"A1")bit2,dest is opcode2=0xF5 & opcode2x=0x8 & bitmode2=1 & bit2; delta8; dest { bittest(*:1 A1, bit2); if ($(ZF) == 1) goto dest; }
-:BSET (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=0 & bit2; delta8 { *:1 A0 = *:1 A0 | (1 << bit2); }
-:BSET (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=1 & bit2; delta8 { *:1 A1 = *:1 A1 | (1 << bit2); }
-:TBNZ (delta8,"A0")bit2,dest is opcode2=0xF5 & opcode2x=0xA & bitmode2=0 & bit2; delta8; dest { bittest(*:1 A0, bit2); if ($(ZF) == 0) goto dest; }
-:TBNZ (delta8,"A1")bit2,dest is opcode2=0xF5 & opcode2x=0xA & bitmode2=1 & bit2; delta8; dest { bittest(*:1 A1, bit2); if ($(ZF) == 0) goto dest; }
-:BCLR (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=0 & bit2; delta8 { *:1 A0 = *:1 A0 & ~(1 << bit2); }
-:BCLR (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=1 & bit2; delta8 { *:1 A1 = *:1 A1 & ~(1 << bit2); }
+:TBZ  (delta8,"A0")bit2,dest is opcode2=0xF5 & opcode2x=0x8 & bitmode2=0 & bit2; delta8; dest { bittest(*:1 (A0 + delta8), bit2); if ($(ZF) == 1) goto dest; }
+:TBZ  (delta8,"A1")bit2,dest is opcode2=0xF5 & opcode2x=0x8 & bitmode2=1 & bit2; delta8; dest { bittest(*:1 (A1 + delta8), bit2); if ($(ZF) == 1) goto dest; }
+:BSET (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=0 & bit2; delta8 { *:1 (A0 + delta8) = *:1 (A0 + delta8) | (1 << bit2); }
+:BSET (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0x9 & bitmode2=1 & bit2; delta8 { *:1 (A1 + delta8) = *:1 (A1 + delta8) | (1 << bit2); }
+:TBNZ (delta8,"A0")bit2,dest is opcode2=0xF5 & opcode2x=0xA & bitmode2=0 & bit2; delta8; dest { bittest(*:1 (A0 + delta8), bit2); if ($(ZF) == 0) goto dest; }
+:TBNZ (delta8,"A1")bit2,dest is opcode2=0xF5 & opcode2x=0xA & bitmode2=1 & bit2; delta8; dest { bittest(*:1 (A1 + delta8), bit2); if ($(ZF) == 0) goto dest; }
+:BCLR (delta8,"A0")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=0 & bit2; delta8 { *:1 (A0 + delta8) = *:1 (A0 + delta8) & ~(1 << bit2); }
+:BCLR (delta8,"A1")bit2 is opcode2=0xF5 & opcode2x=0xB & bitmode2=1 & bit2; delta8 { *:1 (A1 + delta8) = *:1 (A1 + delta8) & ~(1 << bit2); }
 :TBZ  (Addr16_1)bit2,dest is opcode2=0xF5 & opcode2x=0xC & bitmode2=0 & bit2; Addr16_1; dest { bittest(Addr16_1, bit2); if ($(ZF) == 1) goto dest; }
 :TBNZ (Addr16_1)bit2,dest is opcode2=0xF5 & opcode2x=0xC & bitmode2=1 & bit2; Addr16_1; dest { bittest(Addr16_1, bit2); if ($(ZF) == 0) goto dest; }
 :BSET (Addr16_1)bit2 is opcode2=0xF5 & opcode2x=0xD & bitmode2=0 & bit2; Addr16_1 { Addr16_1 = Addr16_1 | (1 << bit2); }
