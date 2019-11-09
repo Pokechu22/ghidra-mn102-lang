@@ -651,4 +651,7 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 :MULQH imm8,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=0 & d2w; delta8=0x05; imm8 unimpl
 :MULQL imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x08; imm16 unimpl
 :MULQH imm16,d2w is opcode2=0xF5 & opcode2x=0xF & e1w=1 & d2w; delta8=0x09; imm16 unimpl
+
+# This should not exist at all, but I am running into it
+:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 unimpl
 @endif
