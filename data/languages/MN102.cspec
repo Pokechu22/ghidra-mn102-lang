@@ -6,6 +6,22 @@
     <range space="ram"/>
     <range space="register"/>
   </global>
+  <data_organization>
+    <absolute_max_alignment value="0" /> <!-- no maximum alignment -->
+    <machine_alignment value="2" />
+    <default_alignment value="2" />
+    <default_pointer_alignment value="4" />
+    <pointer_size value="3" />
+    <short_size value="2" />
+    <integer_size value="3" />
+    <long_size value="4" />
+    <size_alignment_map>
+      <entry size="1" alignment="1" />
+      <entry size="2" alignment="2" />
+      <entry size="3" alignment="2" />
+      <entry size="4" alignment="4" />
+    </size_alignment_map>
+  </data_organization>
   <stackpointer register="A3" space="ram" growth="negative"/>
   <returnaddress>
     <varnode space="stack" offset="0" size="3"/>
@@ -24,7 +40,7 @@
           <register name="A0"/>
         </pentry>
       </input>
-      <output killedbycall="true">
+      <output>
         <pentry minsize="1" maxsize="3">
           <register name="D0"/>
         </pentry>

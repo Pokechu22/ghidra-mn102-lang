@@ -24,5 +24,33 @@
     <memory_block name="BITS" start_address="BITS:00" bit_mapped_address="INTMEM:20" length="0x80"/>
   </default_memory_blocks>
   -->
-  
+
+  <register_data>
+    <register name="D0" group="DATA" />
+    <register name="D1" group="DATA" />
+    <register name="D2" group="DATA" />
+    <register name="D3" group="DATA" />
+    <register name="A0" group="ADDRESS" />
+    <register name="A1" group="ADDRESS" />
+    <register name="A2" group="ADDRESS" />
+    <register name="A3" group="ADDRESS" />
+    <!-- <register name="PC" /> I don't think this is needed given the <programcounter/> -->
+    <register name="MDR" group="DATA" />
+    <register name="PSW" group="FLAGS" />
+    <!-- hack registers -->
+    <register name="PSW_ZF"  group="FLAGS" hidden="true" />
+    <register name="PSW_NF"  group="FLAGS" hidden="true" />
+    <register name="PSW_CF"  group="FLAGS" hidden="true" />
+    <register name="PSW_VF"  group="FLAGS" hidden="true" />
+    <register name="PSW_ZX"  group="FLAGS" hidden="true" />
+    <register name="PSW_NX"  group="FLAGS" hidden="true" />
+    <register name="PSW_CX"  group="FLAGS" hidden="true" />
+    <register name="PSW_VX"  group="FLAGS" hidden="true" />
+    <register name="PSW_IM0" group="FLAGS" hidden="true" />
+    <register name="PSW_IM1" group="FLAGS" hidden="true" />
+    <register name="PSW_IM2" group="FLAGS" hidden="true" />
+    <register name="PSW_IE"  group="FLAGS" hidden="true" />
+    <register name="PSW_S0"  group="FLAGS" hidden="true" />
+    <register name="PSW_S1"  group="FLAGS" hidden="true" />
+  </register_data>
 </processor_spec>
