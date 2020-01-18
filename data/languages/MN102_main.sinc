@@ -252,7 +252,11 @@ define pcodeop broken_constant;
 # MOVB (abs16),d2w is fake
 :MOVB (Addr24_1),d2w is opcode2=0xF4 & opcode2x=0xC & e1w=1 & d2w; Addr24_1 { d2w = sext(Addr24_1); }
 
-:MOVB d1,(a2) is opcode1=1 & d1 & a2 { *:1 a2 = d1:1; }
+# The docs say `MOVB Dm,(An)` is `10+Dm<<2+An` but I see a case that is
+# definitely MOVB D2,(A0) encoded as 0x12, so I think it might be backwards.
+# (also, the delta-based MOVB Dm,(An) instructions are An<<2+Dm)
+# :MOVB d1,(a2) is opcode1=1 & d1 & a2 { *:1 a2 = d1:1; } # what the manual says
+:MOVB d2,(a1) is opcode1=1 & d2 & a1 { *:1 a1 = d2:1; } # what I think is actually right
 :MOVB d2w,(delta8,a1w) is opcode2=0xF5 & opcode2x=0x1 & a1w & d2w; delta8 { *:1 (a1w + delta8) = d2w:1; }
 :MOVB d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x9 & a1w & d2w; delta16 { *:1 (a1w + delta16) = d2w:1; }
 :MOVB d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x2 & a1w & d2w; delta24 { *:1 (a1w + delta24) = d2w:1; }
@@ -356,14 +360,6 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
     a2w = a2w - sext(SImm16); resultflags(a2w);
 }
 :SUB Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); a2w = a2w - Imm24; resultflags(a2w); }
-
-# The other format SHOULD work since it's in the examples (xor/clr), but it doesn't
-# (this exists to avoid updating flags, to try to get a slightly nicer result)
-#:ZERO^" D0" is opcode1=0xA & e1=0 & e2=0 { D0 = 0; }
-#:ZERO^" D1" is opcode1=0xA & e1=1 & e2=1 { D1 = 0; }
-#:ZERO^" D2" is opcode1=0xA & e1=2 & e2=2 { D2 = 0; }
-#:ZERO^" D3" is opcode1=0xA & e1=3 & e2=3 { D3 = 0; }
-#:ZERO d1 is opcode1=0xA & d1 & d2=d1 {d1=0; }
 
 :SUBC d1w,d2w is opcode2=0xF2 & opcode2x=0x9 & d1w & d2w {
     local old_cf:3 = zext($(CF));
