@@ -17,11 +17,8 @@
         <pentry minsize="1" maxsize="3">
           <register name="D1"/>
         </pentry>
-        <pentry minsize="1" maxsize="3">
-          <register name="D2"/>
-        </pentry>
-        <pentry minsize="1" maxsize="3">
-          <register name="D3"/>
+        <pentry minsize="3" maxsize="3">
+          <register name="A0"/>
         </pentry>
       </input>
       <output>
@@ -30,6 +27,10 @@
         </pentry>
       </output>
       <unaffected>
+        <register name="D2"/>
+        <register name="D3"/>
+        <register name="A1"/>
+        <register name="A2"/>
         <register name="A3"/>
       </unaffected>
       <killedbycall>

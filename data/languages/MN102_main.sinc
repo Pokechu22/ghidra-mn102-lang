@@ -195,29 +195,29 @@ define pcodeop broken_constant;
 # All of the following require even addresses (even the 3-byte ones)
 :MOV (a1),d2 is opcode1=2 & a1 & d2 { d2 = sext(*:2 a1); }
 :MOV (delta8,a1),d2 is opcode1=6 & a1 & d2; delta8 { d2 = sext(*:2 (a1 + delta8)); }
-:MOV (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0xC & a1w & d2w; delta16 { d2w = sext(*:2 (a1w + delta16)); }
-:MOV (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x8 & a1w & d2w; delta24 { d2w = sext(*:2 (a1w + delta24)); }
+:MOV (delta16,a1w),d2w is opcode2=0xF7 & opcode2x=0xC & a1w & d2w; delta16 { d2w = sext(*:2 (delta16 + a1w)); }
+:MOV (delta24,a1w),d2w is opcode2=0xF4 & opcode2x=0x8 & a1w & d2w; delta24 { d2w = sext(*:2 (delta24 + a1w)); }
 :MOV (d0w,a1w),d2w is opcode2=0xF1 & opcode20=1 & d0w & a1w & d2w { d2w = sext(*:2 (a1w + d0w)); }
 :MOV (Addr16_2),d2 is opcode1=0xC & e1=2 & d2; Addr16_2 { d2 = sext(Addr16_2); } # C8-CB
 :MOV (Addr24_2),d2w is opcode2=0xF4 & opcode2x=0xC & e1w = 0 & d2w; Addr24_2 { d2w = sext(Addr24_2); }
 :MOV (a1),a2 is opcode1=7 & a1 & a2; delta8=0 { a2 = *:3 a1; } # Special case of the following
 :MOV (delta8,a1),a2 is opcode1=7 & a1 & a2; delta8 { a2 = *:3 (a1 + delta8); }
-:MOV (delta16,a1w),a2w is opcode2=0xF7 & opcode2x=0xB & a1w & a2w; delta16 { a2w = *:3 (a1w + delta16); }
-:MOV (delta24,a1w),a2w is opcode2=0xF4 & opcode2x=0xF & a1w & a2w; delta24 { a2w = *:3 (a1w + delta24); }
+:MOV (delta16,a1w),a2w is opcode2=0xF7 & opcode2x=0xB & a1w & a2w; delta16 { a2w = *:3 (delta16 + a1w); }
+:MOV (delta24,a1w),a2w is opcode2=0xF4 & opcode2x=0xF & a1w & a2w; delta24 { a2w = *:3 (delta24 + a1w); }
 :MOV (Addr16_3),a2w is opcode2=0xF7 & opcode2x=0x3 & e1w=0 & a2w; Addr16_3 { a2w = Addr16_3; }
 :MOV (Addr24_3),a2w is opcode2=0xF4 & opcode2x=0xD & e1w=0 & a2w; Addr24_3 { a2w = Addr24_3; }
 
 :MOV d2,(a1) is opcode1=0 & a1 & d2 { *:2 a1 = d2:2; }
 :MOV d2,(delta8,a1) is opcode1=4 & a1 & d2; delta8 { *:2 (a1 + delta8) = d2:2; }
-:MOV d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x8 & a1w & d2w; delta16 { *:2 (a1w + delta16) = d2w:2; }
-:MOV d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x0 & a1w & d2w; delta24 { *:2 (a1w + delta24) = d2w:2; }
+:MOV d2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0x8 & a1w & d2w; delta16 { *:2 (delta16 + a1w) = d2w:2; }
+:MOV d2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x0 & a1w & d2w; delta24 { *:2 (delta24 + a1w) = d2w:2; }
 :MOV d2w,(d0w,a1w) is opcode2=0xF1 & opcode20=3 & d0w & a1w & d2w { *:2 (a1w + d0w) = d2w:2; }
 :MOV d2,(Addr16_2) is opcode1=0xC & e1=0 & d2; Addr16_2 { Addr16_2 = d2:2; }
 :MOV d2w,(Addr24_2) is opcode2=0xF4 & opcode2x=0x4 & e1w=0 & d2w; Addr24_2 { Addr24_2 = d2w:2; }
 :MOV a2,(a1) is opcode1=5 & a1 & a2; delta8=0 { *:3 a1 = a2; } # Special case of the following
 :MOV a2,(delta8,a1) is opcode1=5 & a1 & a2; delta8 { *:3 (a1+delta8) = a2; }
-:MOV a2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0xA & a1w & a2w; delta16 { *:3 (a1w+delta16) = a2w; }
-:MOV a2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x1 & a1w & a2w; delta24 { *:3 (a1w+delta24) = a2w; }
+:MOV a2w,(delta16,a1w) is opcode2=0xF7 & opcode2x=0xA & a1w & a2w; delta16 { *:3 (delta16 + a1w) = a2w; }
+:MOV a2w,(delta24,a1w) is opcode2=0xF4 & opcode2x=0x1 & a1w & a2w; delta24 { *:3 (delta24 + a1w) = a2w; }
 :MOV a2w,(Addr16_3) is opcode2=0xF7 & opcode2x=0x2 & e1w=0 & a2w; Addr16_3 { Addr16_3 = a2w; }
 :MOV a2w,(Addr24_3) is opcode2=0xF4 & opcode2x=0x5 & e1w=0 & a2w; Addr24_3 { Addr24_3 = a2w; }
 
@@ -348,6 +348,14 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
     a2w = a2w - sext(Imm16); resultflags(a2w);
 }
 :SUB Imm24,a2w is opcode2=0xF4 & opcode2x=0x6 & e1w=3 & a2w; Imm24 { subflags(a2w, Imm24); a2w = a2w - Imm24; resultflags(a2w); }
+
+# The other format SHOULD work since it's in the examples (xor/clr), but it doesn't
+# (this exists to avoid updating flags, to try to get a slightly nicer result)
+:ZERO^" D0" is opcode1=0xA & e1=0 & e2=0 { D0 = 0; }
+:ZERO^" D1" is opcode1=0xA & e1=1 & e2=1 { D1 = 0; }
+:ZERO^" D2" is opcode1=0xA & e1=2 & e2=2 { D2 = 0; }
+:ZERO^" D3" is opcode1=0xA & e1=3 & e2=3 { D3 = 0; }
+#:ZERO d1 is opcode1=0xA & d1 & d2=d1 {d1=0; }
 
 :SUBC d1w,d2w is opcode2=0xF2 & opcode2x=0x9 & d1w & d2w {
     local old_cf:3 = zext($(CF));
@@ -698,5 +706,5 @@ macro bittest(addr, bit) {
 }
 
 # This should not exist at all, but I am running into it
-:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 unimpl
+:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 {}
 @endif
