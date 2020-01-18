@@ -33,7 +33,7 @@
     <register name="A0" group="ADDRESS" />
     <register name="A1" group="ADDRESS" />
     <register name="A2" group="ADDRESS" />
-    <register name="A3" group="ADDRESS" />
+    <register name="SP" group="ADDRESS" />
     <!-- <register name="PC" /> I don't think this is needed given the <programcounter/> -->
     <register name="MDR" group="DATA" />
     <register name="PSW" group="FLAGS" />

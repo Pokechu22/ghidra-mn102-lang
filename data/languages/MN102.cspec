@@ -22,7 +22,7 @@
       <entry size="4" alignment="4" />
     </size_alignment_map>
   </data_organization>
-  <stackpointer register="A3" space="ram" growth="negative"/>
+  <stackpointer register="SP" space="ram" growth="negative"/>
   <returnaddress>
     <varnode space="stack" offset="0" size="3"/>
   </returnaddress>
@@ -50,7 +50,7 @@
         <register name="D3"/>
         <register name="A1"/>
         <register name="A2"/>
-        <register name="A3"/>
+        <register name="SP"/>
       </unaffected>
       <killedbycall>
         <register name="PSW_ZF" />

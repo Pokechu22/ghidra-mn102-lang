@@ -38,7 +38,7 @@ define space register type=register_space size=1;
 # Data registers
 define register offset=0 size=3 [ D0 D1 D2 D3 ];
 # Address registers
-define register offset=12 size=3 [ A0 A1 A2 A3 ];
+define register offset=12 size=3 [ A0 A1 A2 SP ];
 # Program counter
 define register offset=24 size=3 [ PC ];
 # Multiply/divide register
@@ -181,7 +181,7 @@ Addr24_2: abs24 is abs24 { export *:2 abs24; }
 Addr16_3: abs16 is abs16 { export *:3 abs16; }
 Addr24_3: abs24 is abs24 { export *:3 abs24; }
 
-attach variables [ a1 a2 a1w a2w ] [ A0 A1 A2 A3 ];
+attach variables [ a1 a2 a1w a2w ] [ A0 A1 A2 SP ];
 attach variables [ d1 d2 d1w d2w ] [ D0 D1 D2 D3 ];
 
 define pcodeop broken_abs_read;
@@ -572,34 +572,34 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 :JMP (a1w) is opcode2=0xF0 & opcode2x=0x0 & a1w & e2w=0 { goto [a1w]; }
 
 :JSR label16 is fullopcode1=0xFD; label16 {
-    #*:3 A3 = inst_next;
-    #A3 = A3 - 4;
+    #*:3 SP = inst_next;
+    #SP = SP - 4;
     call label16;
 }
 :JSR label24 is opcode2=0xF4 & opcode2f=0xE1; label24 {
-    #*:3 A3 = inst_next;
-    #A3 = A3 - 4;
+    #*:3 SP = inst_next;
+    #SP = SP - 4;
     call label24;
 }
 :JSR (a1w) is opcode2=0xF0 & opcode2x=0x0 & a1w & e2w=1 {
-    #*:3 A3 = inst_next;
-    #A3 = A3 - 4;
+    #*:3 SP = inst_next;
+    #SP = SP - 4;
     call [a1w];
 }
 
 :NOP is fullopcode1=0xF6 {}
 
 :RTS is fullopcode1=0xFE {
-    local addr = *:3 A3;
-    #A3 = A3 + 4;
+    local addr = *:3 SP;
+    #SP = SP + 4;
     # I'm not sure the brackets here (and in JMP/JSR (A1)) are correct
     return [addr];
 }
 
 :RTI is fullopcode1=0xEB {
-    PSW = *:2 A3;
-    local addr = *:3 (A3 + 2);
-    A3 = A3 + 6;
+    PSW = *:2 SP;
+    local addr = *:3 (SP + 2);
+    SP = SP + 6;
     return [addr];
 }
 
@@ -633,13 +633,13 @@ macro bittest(addr, bit) {
 :BLCR (Addr24_1)bit is opcode3=0xF3 & opcode32=0xFE & opcode33=0xD & bitmode=1 & bit; Addr24_1 { Addr24_1 = Addr24_1 & ~(1 << bit); }
 
 :TBZ  (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=0 & bit; delta8; dest { bittest(*:1 (A2 + delta8), bit); if ($(ZF) == 1) goto dest; }
-:TBZ  (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=1 & bit; delta8; dest { bittest(*:1 (A3 + delta8), bit); if ($(ZF) == 1) goto dest; }
+:TBZ  (delta8,"SP")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0x8 & bitmode=1 & bit; delta8; dest { bittest(*:1 (SP + delta8), bit); if ($(ZF) == 1) goto dest; }
 :BSET (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=0 & bit; delta8 { *:1 (A2 + delta8) = *:1 (A2 + delta8) | (1 << bit); }
-:BSET (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=1 & bit; delta8 { *:1 (A3 + delta8) = *:1 (A3 + delta8) | (1 << bit); }
+:BSET (delta8,"SP")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0x9 & bitmode=1 & bit; delta8 { *:1 (SP + delta8) = *:1 (SP + delta8) | (1 << bit); }
 :TBNZ (delta8,"A2")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=0 & bit; delta8; dest { bittest(*:1 (A2 + delta8), bit); if ($(ZF) == 0) goto dest; }
-:TBNZ (delta8,"A3")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; delta8; dest { bittest(*:1 (A3 + delta8), bit); if ($(ZF) == 0) goto dest; }
+:TBNZ (delta8,"SP")bit,dest is opcode3=0xF3 & opcode32=0xFF & opcode33=0xA & bitmode=1 & bit; delta8; dest { bittest(*:1 (SP + delta8), bit); if ($(ZF) == 0) goto dest; }
 :BCLR (delta8,"A2")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=0 & bit; delta8 { *:1 (A2 + delta8) = *:1 (A2 + delta8) & ~(1 << bit); }
-:BCLR (delta8,"A3")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 { *:1 (A3 + delta8) = *:1 (A3 + delta8) & ~(1 << bit); }
+:BCLR (delta8,"SP")bit is opcode3=0xF3 & opcode32=0xFF & opcode33=0xB & bitmode=1 & bit; delta8 { *:1 (SP + delta8) = *:1 (SP + delta8) & ~(1 << bit); }
 
 # New F4 instructions
 :BSET imm8,(Addr24_1) is opcode2=0xF4 & opcode2f=0x4b; Addr24_1; imm8 { Addr24_1 = Addr24_1 | imm8; }
