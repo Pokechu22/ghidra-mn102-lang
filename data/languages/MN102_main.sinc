@@ -351,10 +351,10 @@ macro subflags(op1, op2) {   # Flags set by sub instructions - not sure I got th
 
 # The other format SHOULD work since it's in the examples (xor/clr), but it doesn't
 # (this exists to avoid updating flags, to try to get a slightly nicer result)
-:ZERO^" D0" is opcode1=0xA & e1=0 & e2=0 { D0 = 0; }
-:ZERO^" D1" is opcode1=0xA & e1=1 & e2=1 { D1 = 0; }
-:ZERO^" D2" is opcode1=0xA & e1=2 & e2=2 { D2 = 0; }
-:ZERO^" D3" is opcode1=0xA & e1=3 & e2=3 { D3 = 0; }
+#:ZERO^" D0" is opcode1=0xA & e1=0 & e2=0 { D0 = 0; }
+#:ZERO^" D1" is opcode1=0xA & e1=1 & e2=1 { D1 = 0; }
+#:ZERO^" D2" is opcode1=0xA & e1=2 & e2=2 { D2 = 0; }
+#:ZERO^" D3" is opcode1=0xA & e1=3 & e2=3 { D3 = 0; }
 #:ZERO d1 is opcode1=0xA & d1 & d2=d1 {d1=0; }
 
 :SUBC d1w,d2w is opcode2=0xF2 & opcode2x=0x9 & d1w & d2w {
@@ -584,10 +584,10 @@ label24: rel is delta24 [ rel = inst_next + delta24; ] {
 :NOP is fullopcode1=0xF6 {}
 
 :RTS is fullopcode1=0xFE {
-    #local addr = *:3 A3;
+    local addr = *:3 A3;
     #A3 = A3 + 4;
     # I'm not sure the brackets here (and in JMP/JSR (A1)) are correct
-    return [PC];
+    return [addr];
 }
 
 :RTI is fullopcode1=0xEB {

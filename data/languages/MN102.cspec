@@ -7,6 +7,9 @@
     <range space="register"/>
   </global>
   <stackpointer register="A3" space="ram" growth="negative"/>
+  <returnaddress>
+    <varnode space="stack" offset="0" size="3"/>
+  </returnaddress>
   <default_proto>
     <prototype name="__stdcall" extrapop="0" stackshift="0" strategy="register">
       <!-- Complete guess! -->
@@ -21,7 +24,7 @@
           <register name="A0"/>
         </pentry>
       </input>
-      <output>
+      <output killedbycall="true">
         <pentry minsize="1" maxsize="3">
           <register name="D0"/>
         </pentry>
