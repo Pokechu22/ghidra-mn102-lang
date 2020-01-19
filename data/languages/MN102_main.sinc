@@ -226,12 +226,7 @@ define pcodeop broken_constant;
 :MOV a2w,(Addr16_3) is opcode2=0xF7 & opcode2x=0x2 & e1w=0 & a2w; Addr16_3 { Addr16_3 = a2w; }
 :MOV a2w,(Addr24_3) is opcode2=0xF4 & opcode2x=0x5 & e1w=0 & a2w; Addr24_3 { Addr24_3 = a2w; }
 
-# For some reason, this doesn't work, but a similar thing (clr) is shown in the example
-:MOV Imm8,"D0" is opcode1=8 & e1=0 & e2=0; Imm8 { D0 = sext(Imm8); }
-:MOV Imm8,"D1" is opcode1=8 & e1=1 & e2=1; Imm8 { D1 = sext(Imm8); }
-:MOV Imm8,"D2" is opcode1=8 & e1=2 & e2=2; Imm8 { D2 = sext(Imm8); }
-:MOV Imm8,"D3" is opcode1=8 & e1=3 & e2=3; Imm8 { D3 = sext(Imm8); }
-#:MOV Imm8,d2 is opcode1=8 & d2 & d1=d2; Imm8 { d2 = sext(Imm8); } # Replaces d2 = d1 when same registers
+:MOV Imm8,d2 is opcode1=8 & d2 & d2=d1; Imm8 { d2 = sext(Imm8); } # Replaces d2 = d1 (MOV d1,d2) when same registers
 :MOV Imm16,d2 is opcode1=0xF & e1=2 & d2; Imm16 { d2 = sext(Imm16); } # F8-FB
 :MOV Imm24,d2w is opcode2=0xF4 & opcode2x=0x7 & e1w=0 & d2w; Imm24 { d2w = Imm24; }
 :MOV Imm16,a2 is opcode1=0xD & e1=3 & a2; Imm16 { a2 = zext(Imm16); } # DC-DF
