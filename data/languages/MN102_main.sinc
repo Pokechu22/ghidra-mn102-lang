@@ -705,5 +705,5 @@ macro bittest(addr, bit) {
 }
 
 # This should not exist at all, but I am running into it
-:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 {}
+:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 unimpl
 @endif
