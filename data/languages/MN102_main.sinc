@@ -140,16 +140,16 @@ define token format2 (16)
    d2w         = (8,9)
    d0w         = (12,13)
    # h variant only
-   bitmode2    = (8,8)
-   bit2        = (9,11);
+   bitmode2    = (11,11)
+   bit2        = (8,10);
 
 # H variant only
 define token format3 (24)
    opcode3     = (0,7)
    opcode32    = (8,15)
    opcode33    = (20,23)
-   bitmode     = (16,16)
-   bit         = (17,19);
+   bitmode     = (19,19)
+   bit         = (16,18);
 
 # n.b. the manual uses d8/d16/d24, but that gets confusing with d1/d2
 define token immtoken8(8)
@@ -615,7 +615,7 @@ macro bittest(addr, bit) {
     $(VF) = 0;
     $(CF) = 0;
     $(NF) = 0;
-    $(ZF) = ((addr & (1 << bit)) != 0);
+    $(ZF) = ((addr & (1 << bit)) == 0);
 }
 
 # Test bits out of memory, 1<<bit, and branches if 0/nonzero
