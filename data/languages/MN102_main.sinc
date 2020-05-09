@@ -181,7 +181,7 @@ Addr16_3: abs16 is abs16 { export *:3 abs16; }
 Addr24_3: abs24 is abs24 { export *:3 abs24; }
 
 attach variables [ a1 a2 a1w a2w ] [ A0 A1 A2 SP ];
-attach variables [ d1 d2 d1w d2w ] [ D0 D1 D2 D3 ];
+attach variables [ d1 d2 d1w d2w d0w ] [ D0 D1 D2 D3 ];
 
 define pcodeop broken_abs_read;
 define pcodeop broken_abs_write;
@@ -704,6 +704,10 @@ macro bittest(addr, bit) {
     d2w = sext(reshigh);
 }
 
-# This should not exist at all, but I am running into it
-:UNKNOWN_F100 is opcode2=0xF1 & opcode2f=0x00 unimpl
+# This instruction was removed in the 3rd printing of the MN102H60G/60K/F60G/F60K LSI User's Manual (Pub.No.22360-013E)
+# but is found in the 1st printing (Pub.No.22360-011E).  The changelog notes the removal but does not elaborate on it.
+:MOV (d0w,a1w),a2w is opcode2=0xF1 & opcode20=0 & d0w & a1w & a2w { a2w = *:3 (a1w + d0w); }
+# This also was removed, but wasn't used by the GC driver.
+:MOV a2w,(d0w,a1w) is opcode2=0xF1 & opcode20=2 & d0w & a1w & a2w { *:3 (a1w + d0w) = a2w; }
+
 @endif
