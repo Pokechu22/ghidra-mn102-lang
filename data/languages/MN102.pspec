@@ -329,18 +329,18 @@
     <symbol name="P9OUT" address="0xFFC9" />
     <symbol name="P9IN"  address="0xFFD9" />
     <symbol name="P9DIR" address="0xFFE9" />
-    <symbol name="P9LMD" address="0xFFFC" />
-    <symbol name="P9HMD" address="0xFFFD" />
+    <symbol name="P9LMD" address="0xFFEC" />
+    <symbol name="P9HMD" address="0xFFED" />
     <symbol name="PAPLU" address="0xFFBA" />
     <symbol name="PAOUT" address="0xFFCA" />
     <symbol name="PAIN"  address="0xFFDA" />
     <symbol name="PADIR" address="0xFFEA" />
-    <symbol name="PAMD"  address="0xFFFC" />
+    <symbol name="PAMD"  address="0xFFDC" />
     <symbol name="PBPLU" address="0xFFBB" />
     <symbol name="PBOUT" address="0xFFCB" />
     <symbol name="PBIN"  address="0xFFDB" />
     <symbol name="PBDIR" address="0xFFEB" />
-    <symbol name="PBMD"  address="0xFFFD" />
+    <symbol name="PBMD"  address="0xFFDD" />
     <symbol name="PBSWL" address="0xFFBC" /> <!-- 16 bits, no access noted -->
     <symbol name="PBSWH" address="0xFFBE" /> <!-- 8 bits, no access noted -->
     <symbol name="LBSWL" address="0xFFCC" /> <!-- 16 bits, no access noted -->
