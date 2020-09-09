@@ -91,3 +91,62 @@ These instructions aren't listed in the 3rd printing of the MN102H60GFA manual, 
 The first form shows up in the GameCube drive code as `F1 00` (`MOV (D0, A0), A0`), in code related to the state machines (and thus to multi-dimensional arrays) where it seems plausible.  The second form does not show up at all.  If an implementation bug or something caused it to be removed, it probably does not affect the GameCube, since the relevant function is pretty frequently hit based on my understanding.
 
 Interestingly, these instructions are actually present in the MN102L manual (but invisible; text can be copied out of it and pasted into notepad though).  They can be found on pages 35 (51 in the PDF) and 42 (58 in the PDF).
+
+## Known issues
+
+### Registers show up in decompilation
+
+For some reason, registers show up in the decompilation, instead of using local variables.  For instance, the above memset example actually decompiles to this:
+
+```C
+void memset(byte value,uint2 count,byte *dst)
+{
+  D0 = 0;
+  while( true ) {
+    if ((ushort)D1 <= (ushort)D0) break;
+    *dst = value;
+    D0 = D0 + 1;
+    dst = dst + 1;
+  }
+  return;
+}
+```
+
+Without the current separate processor status variable hackery, it instead looks like this:
+
+```C
+void memset(byte value,uint2 count,byte *dst)
+{
+  ushort uVar1;
+  ushort uVar2;
+  ushort uVar3;
+  ushort uVar4;
+  ushort uVar5;
+
+  D0 = 0;
+  uVar1 = PSW & 0xff00 | 0x10;
+  while( true ) {
+    uVar2 = (ushort)(D0 < count) << 6;
+    uVar3 = (ushort)SBORROW3(D0,count) << 7;
+    uVar4 = (ushort)((ushort)D0 < (ushort)D1) << 2;
+    uVar5 = (ushort)SBORROW2((ushort)D0,(ushort)D1) << 3;
+    if (((byte)((uVar4 | uVar5) >> 2) & 1) != 1) break;
+    *buf = value;
+    D0 = D0 + 1;
+    buf = buf + 1;
+    uVar1 = uVar1 & 0xff00 | uVar2 | uVar3 | uVar4 | uVar5;
+  }
+  PSW = uVar1 & 0xff00 | uVar2 | uVar3 | uVar4 | uVar5 | (ushort)((int)register0x15 < 0) << 5 |
+        (ushort)((undefined *)register0x15 == (undefined *)0x0) << 4 | (ushort)((short)SP < 0) << 1
+        | (ushort)((short)SP == 0);
+  return;
+}
+```
+
+This doesn't make sense to me, since other processors don't have this problem (though, I think the 8051 one does, and I based mine off of it).
+
+### Parameter ordering
+
+The MN102 has both data registers (`D0`, `D1`, `D2`, `D3`) and address registers (`A0`, `A1`, `A2`, `SP`).  Parameters can be in either of them, with pointers usually going into address registers.  Thus, the original order of the parameters can't be determined, and things will often be a bit weird (I manually adjusted them in the original `memset` example).
+
+I'm also not 100% sure what the actual calling convention is and whether `D0` is always the return register, or `A0` sometimes is.  The current specification is in `MN102.cspec`.
