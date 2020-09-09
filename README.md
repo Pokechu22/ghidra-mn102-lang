@@ -92,6 +92,10 @@ The first form shows up in the GameCube drive code as `F1 00` (`MOV (D0, A0), A0
 
 Interestingly, these instructions are actually present in the MN102L manual (but invisible; text can be copied out of it and pasted into notepad though).  They can be found on pages 35 (51 in the PDF) and 42 (58 in the PDF).
 
+### 32-bit pointers
+
+Ghidra handles 3-byte values surprisingly well.  Most actual pointers are 3 bytes, but generally arrays of pointers are 4 bytes with the 4th byte set to 0 due to alignment concerns (along with it being faster to multiply by 4 by adding a variable to itself twice).  The type for an array of 56 such pointers is `pointer32[56]` or `type *32[56]`, and an array of 8 pointers to such arrays would have the type `pointer32 *32[8]` or `type *32 *32[8]`.
+
 ## Known issues
 
 ### Registers show up in decompilation
