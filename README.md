@@ -1,4 +1,8 @@
-TODO
+A SLEIGH processor spec for [https://github.com/NationalSecurityAgency/ghidra](Ghidra) for the Matsushita (Panasonic) MN102 processor.  The MN102 is used by the Nintendo GameCube and Wii for the disc drive.
+
+## Installation
+
+This repository should be placed within the Ghidra install as the folder `Ghidra/Processors/MN102`, such that `Ghidra/Processors/MN102/data` is the path to the `data` folder.  Ghidra should automatically add it to the available processor list on its next start, and compile the files when it is first used.
 
 ## Notes
 ### `MOVB Dm,(An)`
