@@ -83,3 +83,11 @@ void memset(byte * dst, byte value, uint2 count) {
 	}
 }
 ```
+
+### `MOV (Di, An), Am` and `MOV Am, (Di, An)`
+
+These instructions aren't listed in the 3rd printing of the MN102H60GFA manual, only in the 1st printing.  They have opcodes F1 00-F1 3F and F1 80-F1 BF. Similar `MOV (Di, An), Dm)` and `MOV Dm (Di, An)` instructions take up the rest of `F1`, and are listed in both printings. (These instructions are listed in the "Differences between 1st Edition 1st Printing and 1st Edition 3rd Printing" section, but it doesn't elaborate on why they were deleted).
+
+The first form shows up in the GameCube drive code as `F1 00` (`MOV (D0, A0), A0`), in code related to the state machines (and thus to multi-dimensional arrays) where it seems plausible.  The second form does not show up at all.  If an implementation bug or something caused it to be removed, it probably does not affect the GameCube, since the relevant function is pretty frequently hit based on my understanding.
+
+Interestingly, these instructions are actually present in the MN102L manual (but invisible; text can be copied out of it and pasted into notepad though).  They can be found on pages 35 (51 in the PDF) and 42 (58 in the PDF).
