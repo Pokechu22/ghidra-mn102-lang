@@ -1,4 +1,4 @@
-A SLEIGH processor spec for [https://github.com/NationalSecurityAgency/ghidra](Ghidra) for the Matsushita (Panasonic) MN102 processor.  The MN102 is used by the Nintendo GameCube and Wii for the disc drive.
+A SLEIGH processor spec for [Ghidra](https://github.com/NationalSecurityAgency/ghidra) for the Matsushita (Panasonic) MN102 processor.  The MN102 is used by the Nintendo GameCube and Wii for the disc drive.
 
 ## Installation
 
